@@ -11,6 +11,7 @@ interface ResultsPanelProps {
   keywordsAdded: string[];
   isPaid: boolean;
   mode?: "targeted" | "general";
+  hideCoverLetter?: boolean;
 }
 
 async function downloadPDF(filename: string, content: string) {
@@ -89,6 +90,7 @@ export default function ResultsPanel({
   keywordsAdded,
   isPaid,
   mode = "targeted",
+  hideCoverLetter = false,
 }: ResultsPanelProps) {
   const [showChanges, setShowChanges] = useState(false);
   const [downloadingResume, setDownloadingResume] = useState(false);
@@ -195,8 +197,8 @@ export default function ResultsPanel({
         </motion.div>
       )}
 
-      {/* Cover Letter (targeted mode only) */}
-      {mode === "targeted" && (
+      {/* Cover Letter (targeted mode only, unless explicitly hidden) */}
+      {mode === "targeted" && !hideCoverLetter && (
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}

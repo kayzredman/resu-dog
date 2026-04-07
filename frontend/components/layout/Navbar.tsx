@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PawPrint, Zap, Menu, X } from "lucide-react";
+import { PawPrint, Zap, Menu, X, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -48,6 +48,16 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
             <Link
+              href="/build"
+              className={cn(
+                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold transition-all text-foreground-muted hover:text-foreground hover:border-line-hover",
+                pathname === "/build" && "border-primary/40 text-primary bg-primary/5"
+              )}
+            >
+              <Wand2 className="h-4 w-4" />
+              Build CV
+            </Link>
+            <Link
               href="/optimize"
               className={cn(
                 "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all",
@@ -87,6 +97,17 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/build"
+              onClick={() => setMenuOpen(false)}
+              className={cn(
+                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold w-full justify-center mt-2 text-foreground-muted hover:text-foreground",
+                pathname === "/build" && "border-primary/40 text-primary bg-primary/5"
+              )}
+            >
+              <Wand2 className="h-4 w-4" />
+              Build CV
+            </Link>
             <Link
               href="/optimize"
               onClick={() => setMenuOpen(false)}

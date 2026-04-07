@@ -25,6 +25,7 @@ interface ScoreCardProps {
   after: ScoreData;
   mode?: "targeted" | "general";
   isLocked?: boolean;
+  hideBeforeAfter?: boolean;
 }
 
 function getScoreColor(score: number) {
@@ -101,7 +102,7 @@ function ScoreBar({ label, icon: Icon, value }: { label: string; icon: React.Ele
   );
 }
 
-export default function ScoreCard({ before, after, mode = "targeted", isLocked = false }: ScoreCardProps) {
+export default function ScoreCard({ before, after, mode = "targeted", isLocked = false, hideBeforeAfter = false }: ScoreCardProps) {
   const improvement = after.overall_score - before.overall_score;
   const afterColor = getScoreColor(after.overall_score);
   const heroRadius = 56;
@@ -145,7 +146,7 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
             </div>
           </div>
 
-          {improvement > 0 && (
+          {!hideBeforeAfter && improvement > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -164,6 +165,7 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
       </div>
 
       {/* Before / After comparison */}
+      {!hideBeforeAfter && (
       <div className="rounded-2xl border border-line bg-surface p-6">
         <h3 className="font-semibold text-sm mb-5">Before vs After</h3>
         <div className="flex items-center justify-around">
@@ -187,6 +189,7 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
           </div>
         </div>
       </div>
+      )}
 
       {/* Score breakdown bars */}
         <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
