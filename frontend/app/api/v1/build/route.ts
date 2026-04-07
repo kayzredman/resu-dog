@@ -173,11 +173,63 @@ ${answersText}`,
       const cv = JSON.parse(writeResult.choices[0].message.content!);
       const score = JSON.parse(scoreResult.choices[0].message.content!);
 
+      // Strip any leaked metadata from the resume text (GPT sometimes appends keywords_used)
+      const resumeText = (cv.resume ?? "")
+        .replace(/\nkeywords_used\s*:[\s\S]*$/i, "")
+        .trim();
+
       return NextResponse.json({
-        resume: cv.resume ?? "",
+        resume: resumeText,
         keywords_used: cv.keywords_used ?? [],
         score,
       });
+    }
+
+    // ── Action: assist ──────────────────────────────────────────────────────
+    if (action === "assist") {
+      const { role_title, seniority, industry, section, question, existing_answers } = body as {
+        role_title: string;
+        seniority: string;
+        industry: string;
+        section: string;
+        question: string;
+        existing_answers?: Record<string, string>;
+      };
+
+      const contextLines = existing_answers
+        ? Object.entries(existing_answers)
+            .filter(([, v]) => v.trim().length > 0)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n")
+        : "";
+
+      const res = await client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: `You are a career coach helping a candidate complete their resume questionnaire.
+
+Role: ${role_title} (${seniority}) in ${industry}
+Section: ${section}
+Question: ${question}
+${contextLines ? `\nContext from other answers already given:\n${contextLines}\n` : ""}
+Write a realistic, specific draft answer the candidate can use as a starting point.
+Rules:
+- Write in first person.
+- Be concrete — use real-sounding examples relevant to this specific role and industry.
+- Keep it concise: 2–4 sentences or 3 bullet points as appropriate.
+- Use strong action verbs and include numbers/metrics where natural.
+- This is a draft for the candidate to personalise — avoid made-up proper nouns.
+
+Return ONLY valid JSON: { "suggestion": "<draft answer text>" }`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+      });
+
+      return NextResponse.json(JSON.parse(res.choices[0].message.content!));
     }
 
     return NextResponse.json({ detail: `Unknown action: ${action}` }, { status: 400 });

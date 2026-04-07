@@ -146,6 +146,36 @@ export default function BuildPage() {
   const [building, setBuilding] = useState(false);
   const [buildError, setBuildError] = useState("");
   const [buildResult, setBuildResult] = useState<BuildResult | null>(null);
+  const [assistingQId, setAssistingQId] = useState<string | null>(null);
+
+  // ── AI Assist: pre-fill a draft answer for a single question ───────────────
+  const handleAssist = async (q: Question) => {
+    if (!analysis || assistingQId !== null) return;
+    setAssistingQId(q.id);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+      const res = await fetch(`${apiBase}/api/v1/build`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "assist",
+          role_title: analysis.role_title,
+          seniority: analysis.seniority,
+          industry: analysis.industry,
+          section: q.section,
+          question: q.question,
+          existing_answers: answers,
+        }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.suggestion) {
+        setAnswers((prev) => ({ ...prev, [q.id]: data.suggestion }));
+      }
+    } finally {
+      setAssistingQId(null);
+    }
+  };
 
   // ── Step 0: Analyze JD ──────────────────────────────────────────────────────
   const handleAnalyze = async () => {
@@ -319,6 +349,20 @@ export default function BuildPage() {
                       rows={q.section === "Work Experience" ? 4 : 2}
                       className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                     />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleAssist(q)}
+                        disabled={assistingQId !== null}
+                        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {assistingQId === q.id ? (
+                          <><Loader2 className="h-3 w-3 animate-spin" />Getting suggestion&hellip;</>
+                        ) : (
+                          <><Sparkles className="h-3 w-3" />{answers[q.id] ? "Rewrite with AI" : "Help me write this"}</>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
