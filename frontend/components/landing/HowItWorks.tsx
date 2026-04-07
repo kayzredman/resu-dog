@@ -38,7 +38,7 @@ export default function HowItWorks() {
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Three steps. Sixty seconds.
           </h2>
-          <p className="mt-3 text-[#8888aa] max-w-xl mx-auto">
+          <p className="mt-3 text-foreground-muted max-w-xl mx-auto">
             From raw resume to fully optimized, scored, and cover-letter-ready.
           </p>
         </div>
@@ -57,7 +57,7 @@ export default function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15, duration: 0.5 }}
-              className="relative rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-7"
+              className="relative rounded-2xl border border-line bg-surface p-7"
             >
               <div
                 className="inline-flex h-12 w-12 items-center justify-center rounded-xl mb-5"
@@ -68,11 +68,11 @@ export default function HowItWorks() {
               >
                 <step.icon className="h-5 w-5" style={{ color: step.color }} />
               </div>
-              <div className="absolute top-6 right-6 text-4xl font-black text-[#1e1e2e]">
+              <div className="absolute top-6 right-6 text-4xl font-black text-line">
                 {step.step}
               </div>
               <h3 className="text-lg font-bold mb-2">{step.title}</h3>
-              <p className="text-sm text-[#8888aa] leading-relaxed">{step.description}</p>
+              <p className="text-sm text-foreground-muted leading-relaxed">{step.description}</p>
             </motion.div>
           ))}
         </div>

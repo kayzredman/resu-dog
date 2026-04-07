@@ -58,17 +58,17 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
 
   if (uploadedFile) {
     return (
-      <div className="rounded-xl border border-[#6c63ff]/30 bg-[#6c63ff]/5 p-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#6c63ff]/15">
-          <File className="h-5 w-5 text-[#6c63ff]" />
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+          <File className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
-          <p className="text-xs text-[#8888aa]">{uploadedFile.size}</p>
+          <p className="text-xs text-foreground-muted">{uploadedFile.size}</p>
         </div>
         <button
           onClick={onRemove}
-          className="shrink-0 rounded-lg p-1.5 text-[#8888aa] hover:text-white hover:bg-[#1e1e2e] transition-colors"
+          className="shrink-0 rounded-lg p-1.5 text-foreground-muted hover:text-foreground hover:bg-line transition-colors"
           aria-label="Remove file"
         >
           <X className="h-4 w-4" />
@@ -84,8 +84,8 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
         className={cn(
           "relative rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all",
           isDragActive
-            ? "border-[#6c63ff] bg-[#6c63ff]/10"
-            : "border-[#2a2a3a] bg-[#12121a] hover:border-[#6c63ff]/50 hover:bg-[#6c63ff]/5"
+            ? "border-primary bg-primary/10"
+            : "border-line-strong bg-surface hover:border-primary/50 hover:bg-primary/5"
         )}
       >
         <input {...getInputProps()} />
@@ -93,13 +93,13 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
           <div
             className={cn(
               "flex h-14 w-14 items-center justify-center rounded-2xl transition-colors",
-              isDragActive ? "bg-[#6c63ff]/20" : "bg-[#1e1e2e]"
+              isDragActive ? "bg-primary/20" : "bg-line"
             )}
           >
             <Upload
               className={cn(
                 "h-6 w-6 transition-colors",
-                isDragActive ? "text-[#6c63ff]" : "text-[#8888aa]"
+                isDragActive ? "text-primary" : "text-foreground-muted"
               )}
             />
           </div>
@@ -107,12 +107,12 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
             <p className="text-sm font-medium">
               {isDragActive ? "Drop your resume here" : "Drag & drop your resume"}
             </p>
-            <p className="mt-1 text-xs text-[#8888aa]">
+            <p className="mt-1 text-xs text-foreground-muted">
               or{" "}
-              <span className="text-[#6c63ff] underline underline-offset-2">browse files</span>
+              <span className="text-primary underline underline-offset-2">browse files</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#8888aa]">
+          <div className="flex items-center gap-2 text-xs text-foreground-muted">
             <FileText className="h-3.5 w-3.5" />
             PDF, DOCX, TXT · Max 10MB
           </div>
@@ -120,7 +120,7 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
       </div>
 
       {error && (
-        <div className="mt-2 flex items-center gap-2 text-xs text-[#ef4444]">
+        <div className="mt-2 flex items-center gap-2 text-xs text-danger">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {error}
         </div>

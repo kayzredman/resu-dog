@@ -63,13 +63,13 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="px-4 py-24 sm:px-6 lg:px-8 bg-[#0d0d14]">
+    <section id="features" className="px-4 py-24 sm:px-6 lg:px-8 bg-section">
       <div className="mx-auto max-w-6xl">
         <div className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Everything you need to land the interview
           </h2>
-          <p className="mt-3 text-[#8888aa] max-w-xl mx-auto">
+          <p className="mt-3 text-foreground-muted max-w-xl mx-auto">
             Built for the ATS era. Designed for the human on the other side too.
           </p>
         </div>
@@ -82,11 +82,11 @@ export default function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.5 }}
-              className="group rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-6 hover:border-[#6c63ff]/30 transition-colors"
+              className="group rounded-2xl border border-line bg-surface p-6 hover:border-primary/30 transition-colors"
             >
               <div className="flex items-start justify-between mb-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6c63ff]/10 border border-[#6c63ff]/20 group-hover:bg-[#6c63ff]/20 transition-colors">
-                  <feature.icon className="h-5 w-5 text-[#6c63ff]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
+                  <feature.icon className="h-5 w-5 text-primary" />
                 </div>
                 <span
                   className="rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -100,7 +100,7 @@ export default function Features() {
                 </span>
               </div>
               <h3 className="font-semibold mb-2">{feature.title}</h3>
-              <p className="text-sm text-[#8888aa] leading-relaxed">{feature.description}</p>
+              <p className="text-sm text-foreground-muted leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
         </div>

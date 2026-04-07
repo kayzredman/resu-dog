@@ -35,7 +35,7 @@ function ScoreRing({ score, label, color }: { score: number; label: string; colo
     <div className="flex flex-col items-center gap-2">
       <div className="relative h-[100px] w-[100px]">
         <svg className="rotate-[-90deg]" width="100" height="100">
-          <circle cx="50" cy="50" r={radius} fill="none" stroke="#1e1e2e" strokeWidth="8" />
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="var(--line)" strokeWidth="8" />
           <motion.circle
             cx="50"
             cy="50"
@@ -60,10 +60,10 @@ function ScoreRing({ score, label, color }: { score: number; label: string; colo
           >
             {score}
           </motion.span>
-          <span className="text-[10px] text-[#8888aa]">/ 100</span>
+          <span className="text-[10px] text-foreground-muted">/ 100</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-[#8888aa]">{label}</span>
+      <span className="text-xs font-medium text-foreground-muted">{label}</span>
     </div>
   );
 }
@@ -73,7 +73,7 @@ function ScoreBar({ label, icon: Icon, value }: { label: string; icon: React.Ele
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1.5 text-xs text-[#8888aa]">
+        <div className="flex items-center gap-1.5 text-xs text-foreground-muted">
           <Icon className="h-3.5 w-3.5" />
           {label}
         </div>
@@ -81,7 +81,7 @@ function ScoreBar({ label, icon: Icon, value }: { label: string; icon: React.Ele
           {value}%
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-[#1e1e2e] overflow-hidden">
+      <div className="h-1.5 rounded-full bg-line overflow-hidden">
         <motion.div
           className="h-full rounded-full"
           style={{ backgroundColor: color }}
@@ -100,7 +100,7 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
   return (
     <div className="space-y-4">
       {/* Score rings — before/after */}
-      <div className="rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-6">
+      <div className="rounded-2xl border border-line bg-surface p-6">
         <div className="flex items-center justify-between mb-5">
           <h3 className="font-semibold">Compatibility Score</h3>
           {improvement > 0 && (
@@ -122,11 +122,12 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
             label="Before"
             color={getScoreColor(before.overall_score)}
           />
-          <div className="text-3xl font-black text-[#1e1e2e]">→</div>
+          <div className="text-3xl font-black text-line">→</div>
           <div className={cn("relative", isLocked && "select-none")}>
             {isLocked && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-[#0a0a0f]/60">
-                <span className="text-xs text-[#8888aa] text-center px-2">Upgrade to unlock</span>
+              <div
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-background/60">
+                <span className="text-xs text-foreground-muted text-center px-2">Upgrade to unlock</span>
               </div>
             )}
             <ScoreRing
@@ -138,12 +139,12 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
         </div>
 
         {!isLocked && (
-          <p className="mt-4 text-xs text-center text-[#8888aa] italic">{after.summary}</p>
+          <p className="mt-4 text-xs text-center text-foreground-muted italic">{after.summary}</p>
         )}
       </div>
 
       {/* Score breakdown bars */}
-      <div className="rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-6 space-y-4">
+        <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
         <h3 className="font-semibold text-sm mb-2">Score Breakdown</h3>
         <ScoreBar label="Keyword Coverage" icon={Tag} value={after.keyword_coverage} />
         <ScoreBar label="Skills Alignment" icon={Cpu} value={after.skills_alignment} />
@@ -152,10 +153,10 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
 
       {/* Keywords */}
       {after.matched_keywords.length > 0 && (
-        <div className="rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-6">
+        <div className="rounded-2xl border border-line bg-surface p-6">
           <h3 className="font-semibold text-sm mb-3">
             Matched Keywords{" "}
-            <span className="text-[#8888aa] font-normal">
+            <span className="text-foreground-muted font-normal">
               ({after.matched_keywords.length})
             </span>
           </h3>
@@ -163,7 +164,7 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
             {after.matched_keywords.slice(0, 15).map((kw) => (
               <span
                 key={kw}
-                className="rounded-full border border-[#00d4aa]/30 bg-[#00d4aa]/10 px-2.5 py-0.5 text-xs text-[#00d4aa]"
+                className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-0.5 text-xs text-accent"
               >
                 {kw}
               </span>
@@ -174,7 +175,7 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
             <>
               <h3 className="font-semibold text-sm mt-4 mb-3">
                 Missing Keywords{" "}
-                <span className="text-[#8888aa] font-normal">
+                <span className="text-foreground-muted font-normal">
                   ({after.missing_keywords.length})
                 </span>
               </h3>
@@ -182,7 +183,7 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
                 {after.missing_keywords.slice(0, 10).map((kw) => (
                   <span
                     key={kw}
-                    className="rounded-full border border-[#ef4444]/20 bg-[#ef4444]/10 px-2.5 py-0.5 text-xs text-[#ef4444]"
+                    className="rounded-full border border-danger/20 bg-danger/10 px-2.5 py-0.5 text-xs text-danger"
                   >
                     {kw}
                   </span>

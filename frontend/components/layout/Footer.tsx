@@ -27,20 +27,20 @@ function LinkedInIcon() {
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#1e1e2e] bg-[#0a0a0f]">
+    <footer className="border-t border-line bg-background">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6c63ff]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <PawPrint className="h-4 w-4 text-white" />
               </div>
               <span className="text-lg font-bold">
-                resu<span className="text-[#6c63ff]">-dog</span>
+                resu<span className="text-primary">-dog</span>
               </span>
             </Link>
-            <p className="text-sm text-[#8888aa] max-w-xs leading-relaxed">
+            <p className="text-sm text-foreground-muted max-w-xs leading-relaxed">
               AI-powered resume optimization. Beat the ATS, land the interview.
             </p>
             <div className="flex items-center gap-3 mt-4">
@@ -48,21 +48,21 @@ export default function Footer() {
                 href="https://github.com/kayzredman/resu-dog"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#8888aa] hover:text-white transition-colors"
+                className="text-foreground-muted hover:text-foreground transition-colors"
                 aria-label="GitHub"
               >
                 <GithubIcon />
               </a>
               <a
                 href="#"
-                className="text-[#8888aa] hover:text-white transition-colors"
+                className="text-foreground-muted hover:text-foreground transition-colors"
                 aria-label="X (Twitter)"
               >
                 <TwitterXIcon />
               </a>
               <a
                 href="#"
-                className="text-[#8888aa] hover:text-white transition-colors"
+                className="text-foreground-muted hover:text-foreground transition-colors"
                 aria-label="LinkedIn"
               >
                 <LinkedInIcon />
@@ -72,7 +72,7 @@ export default function Footer() {
 
           {/* Product */}
           <div>
-            <h3 className="text-sm font-semibold text-[#f0f0f5] mb-3">Product</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Product</h3>
             <ul className="space-y-2">
               {[
                 { label: "How it works", href: "/#how-it-works" },
@@ -83,7 +83,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-[#8888aa] hover:text-white transition-colors"
+                    className="text-sm text-foreground-muted hover:text-foreground transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -94,7 +94,7 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="text-sm font-semibold text-[#f0f0f5] mb-3">Legal</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Legal</h3>
             <ul className="space-y-2">
               {[
                 { label: "Privacy Policy", href: "/privacy" },
@@ -103,7 +103,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-[#8888aa] hover:text-white transition-colors"
+                    className="text-sm text-foreground-muted hover:text-foreground transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -113,11 +113,11 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-[#1e1e2e] flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-[#8888aa]">
+        <div className="mt-10 pt-6 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2">
+          <p className="text-xs text-foreground-muted">
             © {new Date().getFullYear()} Resu-Dog. All rights reserved.
           </p>
-          <p className="text-xs text-[#8888aa]">
+          <p className="text-xs text-foreground-muted">
             Your data is never stored or used for training.{" "}
             <Link href="/privacy" className="text-[#6c63ff] hover:underline">
               Learn more

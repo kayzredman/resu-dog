@@ -24,11 +24,11 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1.5 rounded-lg border border-[#1e1e2e] px-3 py-1.5 text-xs text-[#8888aa] hover:text-white hover:border-[#2e2e4e] transition-colors"
+      className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs text-foreground-muted hover:text-foreground hover:border-line-hover transition-colors"
     >
       {copied ? (
         <>
-          <Check className="h-3.5 w-3.5 text-[#00d4aa]" />
+          <Check className="h-3.5 w-3.5 text-accent" />
           Copied
         </>
       ) : (
@@ -43,10 +43,10 @@ function CopyButton({ text }: { text: string }) {
 
 function LockedOverlay({ message }: { message: string }) {
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-[#0a0a0f]/70 gap-3">
-      <Lock className="h-6 w-6 text-[#6c63ff]" />
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-background/70 gap-3">
+      <Lock className="h-6 w-6 text-primary" />
       <p className="text-sm font-medium text-center px-4">{message}</p>
-      <button className="rounded-xl bg-[#6c63ff] px-5 py-2 text-sm font-semibold text-white hover:bg-[#5a52e0] transition-colors shadow-lg shadow-[rgba(108,99,255,0.3)]">
+      <button className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark transition-colors shadow-lg shadow-[rgba(108,99,255,0.3)]">
         Upgrade to Pro — $12/mo
       </button>
     </div>
@@ -68,20 +68,20 @@ export default function ResultsPanel({
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative rounded-2xl border border-[#1e1e2e] bg-[#12121a] overflow-hidden"
+        className="relative rounded-2xl border border-line bg-surface overflow-hidden"
       >
         {!isPaid && <LockedOverlay message="Sign up to download your optimized resume" />}
         <div className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#6c63ff]" />
+              <Sparkles className="h-4 w-4 text-primary" />
               <h3 className="font-semibold">Optimized Resume</h3>
             </div>
             <div className="flex items-center gap-2">
               {isPaid && <CopyButton text={optimizedResume} />}
               <button
                 disabled={!isPaid}
-                className="flex items-center gap-1.5 rounded-lg bg-[#6c63ff] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#5a52e0] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileDown className="h-3.5 w-3.5" />
                 Download PDF
@@ -89,8 +89,8 @@ export default function ResultsPanel({
             </div>
           </div>
 
-          <div className="rounded-xl bg-[#0a0a0f] p-4 max-h-[320px] overflow-y-auto">
-            <pre className="text-xs text-[#c0c0d0] whitespace-pre-wrap font-mono leading-relaxed">
+          <div className="rounded-xl bg-background p-4 max-h-[320px] overflow-y-auto">
+            <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
               {optimizedResume}
             </pre>
           </div>
@@ -103,41 +103,41 @@ export default function ResultsPanel({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-2xl border border-[#1e1e2e] bg-[#12121a] overflow-hidden"
+          className="rounded-2xl border border-line bg-surface overflow-hidden"
         >
           <button
             onClick={() => setShowChanges(!showChanges)}
-            className="w-full flex items-center justify-between p-5 text-left hover:bg-[#ffffff05] transition-colors"
+            className="w-full flex items-center justify-between p-5 text-left hover:bg-foreground/[0.03] transition-colors"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Changes Made</span>
-              <span className="rounded-full bg-[#6c63ff]/15 px-2 py-0.5 text-xs text-[#6c63ff]">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
                 {changesMade.length}
               </span>
             </div>
             {showChanges ? (
-              <ChevronUp className="h-4 w-4 text-[#8888aa]" />
+              <ChevronUp className="h-4 w-4 text-foreground-muted" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-[#8888aa]" />
+              <ChevronDown className="h-4 w-4 text-foreground-muted" />
             )}
           </button>
 
           {showChanges && (
             <div className="px-5 pb-5 space-y-2">
               {changesMade.map((change, i) => (
-                <div key={i} className="flex items-start gap-2.5 text-sm text-[#8888aa]">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#6c63ff]" />
+                <div key={i} className="flex items-start gap-2.5 text-sm text-foreground-muted">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                   {change}
                 </div>
               ))}
               {keywordsAdded.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-[#1e1e2e]">
-                  <p className="text-xs text-[#8888aa] mb-2">Keywords added:</p>
+                  <div className="mt-3 pt-3 border-t border-line">
+                  <p className="text-xs text-foreground-muted mb-2">Keywords added:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {keywordsAdded.map((kw) => (
                       <span
                         key={kw}
-                        className="rounded-full border border-[#6c63ff]/25 bg-[#6c63ff]/10 px-2 py-0.5 text-xs text-[#6c63ff]"
+                        className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-primary"
                       >
                         {kw}
                       </span>
@@ -155,7 +155,7 @@ export default function ResultsPanel({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="relative rounded-2xl border border-[#1e1e2e] bg-[#12121a] overflow-hidden"
+        className="relative rounded-2xl border border-line bg-surface overflow-hidden"
       >
         {!isPaid && (
           <LockedOverlay message="Upgrade to access your personalized cover letter" />
@@ -165,8 +165,8 @@ export default function ResultsPanel({
             <h3 className="font-semibold">Cover Letter</h3>
             {isPaid && <CopyButton text={coverLetter} />}
           </div>
-          <div className="rounded-xl bg-[#0a0a0f] p-4 max-h-[280px] overflow-y-auto">
-            <p className="text-sm text-[#c0c0d0] whitespace-pre-wrap leading-relaxed">
+            <div className="rounded-xl bg-background p-4 max-h-[280px] overflow-y-auto">
+            <p className="text-sm text-foreground-soft whitespace-pre-wrap leading-relaxed">
               {coverLetter}
             </p>
           </div>

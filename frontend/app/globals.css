@@ -1,29 +1,95 @@
 @import "tailwindcss";
 
+/* ── Dark theme (default) ──────────────────────────────── */
 :root {
+  /* Backgrounds */
   --background: #0a0a0f;
-  --foreground: #f0f0f5;
-  --card: #12121a;
-  --card-border: #1e1e2e;
-  --primary: #6c63ff;
-  --primary-hover: #5a52e0;
+  --surface:    #12121a;
+  --section:    #0d0d14;
+  --overlay:    rgba(10, 10, 15, 0.82);
+
+  /* Borders */
+  --line:       #1e1e2e;
+  --line-strong:#2a2a3a;
+  --line-hover: #2e2e4e;
+
+  /* Foregrounds */
+  --foreground:          #f0f0f5;
+  --foreground-soft:     #c0c0d0;
+  --foreground-muted:    #8888aa;
+  --foreground-dim:      #4a4a6a;
+  --foreground-disabled: #3a3a5a;
+
+  /* Brand (same both modes) */
+  --primary:      #6c63ff;
+  --primary-dark: #5a52e0;
   --primary-glow: rgba(108, 99, 255, 0.3);
-  --accent: #00d4aa;
-  --accent-glow: rgba(0, 212, 170, 0.2);
-  --muted: #2a2a3a;
-  --muted-foreground: #8888aa;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --accent:       #00d4aa;
+  --accent-glow:  rgba(0, 212, 170, 0.2);
+  --success:      #22c55e;
+  --warning:      #f59e0b;
+  --danger:       #ef4444;
 }
 
+/* ── Light theme ───────────────────────────────────────── */
+.light {
+  --background: #f8f8fc;
+  --surface:    #ffffff;
+  --section:    #f0f0f8;
+  --overlay:    rgba(248, 248, 252, 0.88);
+
+  --line:       #e0e0f0;
+  --line-strong:#d0d0e8;
+  --line-hover: #a0a0cc;
+
+  --foreground:          #0a0a0f;
+  --foreground-soft:     #1e1e3a;
+  --foreground-muted:    #5a5a80;
+  --foreground-dim:      #8888b0;
+  --foreground-disabled: #b0b0cc;
+
+  --primary:      #6c63ff;
+  --primary-dark: #5a52e0;
+  --primary-glow: rgba(108, 99, 255, 0.18);
+  --accent:       #00b894;
+  --accent-glow:  rgba(0, 184, 148, 0.15);
+  --success:      #16a34a;
+  --warning:      #d97706;
+  --danger:       #dc2626;
+}
+
+/* ── Tailwind v4 color token registration ──────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Semantic backgrounds */
+  --color-background:  var(--background);
+  --color-surface:     var(--surface);
+  --color-section:     var(--section);
+
+  /* Borders */
+  --color-line:        var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-line-hover:  var(--line-hover);
+
+  /* Foregrounds */
+  --color-foreground:          var(--foreground);
+  --color-foreground-soft:     var(--foreground-soft);
+  --color-foreground-muted:    var(--foreground-muted);
+  --color-foreground-dim:      var(--foreground-dim);
+  --color-foreground-disabled: var(--foreground-disabled);
+
+  /* Brand */
+  --color-primary:      var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent:       var(--accent);
+  --color-success:      var(--success);
+  --color-warning:      var(--warning);
+  --color-danger:       var(--danger);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* ── Base styles ───────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -37,19 +103,11 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--muted);
-  border-radius: 3px;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
 
-::selection {
-  background: var(--primary-glow);
-}
+::selection { background: var(--primary-glow); }

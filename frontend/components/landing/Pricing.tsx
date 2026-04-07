@@ -52,7 +52,7 @@ export default function Pricing() {
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Simple pricing
           </h2>
-          <p className="mt-3 text-[#8888aa]">
+          <p className="mt-3 text-foreground-muted">
             Free to try. Pay only when you want to download.
           </p>
         </div>
@@ -67,8 +67,8 @@ export default function Pricing() {
               transition={{ delay: i * 0.1, duration: 0.5 }}
               className={`relative rounded-2xl p-7 ${
                 plan.highlighted
-                  ? "bg-[#6c63ff] border border-[#6c63ff] shadow-2xl shadow-[rgba(108,99,255,0.3)]"
-                  : "bg-[#12121a] border border-[#1e1e2e]"
+                  ? "bg-primary border border-primary shadow-2xl shadow-[rgba(108,99,255,0.3)]"
+                  : "bg-surface border border-line"
               }`}
             >
               {plan.badge && (
@@ -84,7 +84,7 @@ export default function Pricing() {
                   {plan.period && (
                     <span
                       className={`text-sm ${
-                        plan.highlighted ? "text-white/70" : "text-[#8888aa]"
+                        plan.highlighted ? "text-white/70" : "text-foreground-muted"
                       }`}
                     >
                       {plan.period}
@@ -93,7 +93,7 @@ export default function Pricing() {
                 </div>
                 <p
                   className={`mt-1.5 text-sm ${
-                    plan.highlighted ? "text-white/70" : "text-[#8888aa]"
+                    plan.highlighted ? "text-white/70" : "text-foreground-muted"
                   }`}
                 >
                   {plan.description}
@@ -106,19 +106,19 @@ export default function Pricing() {
                     {feature.included === true ? (
                       <Check
                         className={`h-4 w-4 mt-0.5 shrink-0 ${
-                          plan.highlighted ? "text-white" : "text-[#00d4aa]"
+                          plan.highlighted ? "text-white" : "text-accent"
                         }`}
                       />
                     ) : feature.included === "partial" ? (
                       <Zap
                         className={`h-4 w-4 mt-0.5 shrink-0 ${
-                          plan.highlighted ? "text-white/70" : "text-[#f59e0b]"
+                          plan.highlighted ? "text-white/70" : "text-warning"
                         }`}
                       />
                     ) : (
                       <Lock
                         className={`h-4 w-4 mt-0.5 shrink-0 ${
-                          plan.highlighted ? "text-white/40" : "text-[#2a2a3a]"
+                          plan.highlighted ? "text-white/40" : "text-line-strong"
                         }`}
                       />
                     )}
@@ -127,10 +127,10 @@ export default function Pricing() {
                         feature.included === false
                           ? plan.highlighted
                             ? "text-white/40"
-                            : "text-[#3a3a5a]"
+                            : "text-foreground-disabled"
                           : plan.highlighted
                           ? "text-white"
-                          : "text-[#c0c0d0]"
+                          : "text-foreground-soft"
                       }`}
                     >
                       {feature.text}
@@ -143,8 +143,8 @@ export default function Pricing() {
                 href={plan.ctaHref}
                 className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all ${
                   plan.highlighted
-                    ? "bg-white text-[#6c63ff] hover:bg-[#f0f0f5]"
-                    : "bg-[#6c63ff] text-white hover:bg-[#5a52e0] shadow-lg shadow-[rgba(108,99,255,0.25)]"
+                    ? "bg-white text-primary hover:bg-foreground"
+                    : "bg-primary text-white hover:bg-primary-dark shadow-lg shadow-[rgba(108,99,255,0.25)]"
                 }`}
               >
                 {plan.cta}
@@ -153,7 +153,7 @@ export default function Pricing() {
           ))}
         </div>
 
-        <p className="text-center mt-6 text-xs text-[#8888aa]">
+        <p className="text-center mt-6 text-xs text-foreground-muted">
           Cancel anytime. No credit card required for free tier.
         </p>
       </div>

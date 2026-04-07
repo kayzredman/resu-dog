@@ -89,7 +89,7 @@ export default function OptimizePage() {
         <h1 className="text-3xl font-extrabold tracking-tight">
           Optimize your resume
         </h1>
-        <p className="mt-1.5 text-[#8888aa]">
+        <p className="mt-1.5 text-foreground-muted">
           Upload your resume and paste the job description. We&apos;ll do the rest.
         </p>
       </div>
@@ -98,9 +98,9 @@ export default function OptimizePage() {
         {/* Left — inputs */}
         <div className="space-y-5">
           {/* Step 1: Upload */}
-          <div className="rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-6">
+          <div className="rounded-2xl border border-line bg-surface p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6c63ff] text-xs font-bold text-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                 1
               </span>
               <h2 className="font-semibold">Upload your resume</h2>
@@ -119,9 +119,9 @@ export default function OptimizePage() {
           </div>
 
           {/* Step 2: Job Description */}
-          <div className="rounded-2xl border border-[#1e1e2e] bg-[#12121a] p-6">
+          <div className="rounded-2xl border border-line bg-surface p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6c63ff] text-xs font-bold text-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                 2
               </span>
               <h2 className="font-semibold">Paste the job description</h2>
@@ -131,9 +131,9 @@ export default function OptimizePage() {
               onChange={(e) => setJobDescription(e.target.value)}
               placeholder="Paste the full job description here — include requirements, responsibilities, and preferred qualifications for best results..."
               rows={10}
-              className="w-full resize-none rounded-xl border border-[#2a2a3a] bg-[#0a0a0f] px-4 py-3 text-sm text-[#f0f0f5] placeholder-[#4a4a6a] focus:border-[#6c63ff] focus:outline-none focus:ring-1 focus:ring-[#6c63ff] transition-colors"
+              className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             />
-            <div className="mt-1.5 flex justify-between text-xs text-[#8888aa]">
+            <div className="mt-1.5 flex justify-between text-xs text-foreground-muted">
               <span>Minimum 50 characters</span>
               <span>{jobDescription.length} chars</span>
             </div>
@@ -143,7 +143,7 @@ export default function OptimizePage() {
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#6c63ff] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-[#5a52e0] hover:shadow-[rgba(108,99,255,0.45)] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark hover:shadow-[rgba(108,99,255,0.45)] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
           >
             {step === "loading" ? (
               <>
@@ -180,15 +180,15 @@ export default function OptimizePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl border border-dashed border-[#1e1e2e] text-center p-8"
+                className="flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl border border-dashed border-line text-center p-8"
               >
                 <div className="h-16 w-16 rounded-2xl bg-[#6c63ff]/10 border border-[#6c63ff]/20 flex items-center justify-center mb-4">
                   <Zap className="h-7 w-7 text-[#6c63ff]" />
                 </div>
-                <p className="text-sm font-medium text-[#8888aa]">
+                <p className="text-sm font-medium text-foreground-muted">
                   Your score and optimized resume will appear here
                 </p>
-                <p className="text-xs text-[#4a4a6a] mt-1">
+                <p className="text-xs text-foreground-dim mt-1">
                   Upload a resume and paste a job description to get started
                 </p>
               </motion.div>
@@ -200,11 +200,11 @@ export default function OptimizePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl border border-[#1e1e2e] bg-[#12121a] text-center p-8"
+                className="flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl border border-line bg-surface text-center p-8"
               >
-                <Loader2 className="h-10 w-10 text-[#6c63ff] animate-spin mb-4" />
+                <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
                 <p className="text-sm font-medium">Optimizing your resume…</p>
-                <p className="text-xs text-[#8888aa] mt-1">
+                <p className="text-xs text-foreground-muted mt-1">
                   Scoring, rewriting, and generating cover letter in parallel
                 </p>
                 <div className="mt-5 space-y-2 w-full max-w-xs">
@@ -215,9 +215,9 @@ export default function OptimizePage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.4 }}
-                        className="flex items-center gap-2 text-xs text-[#8888aa]"
+                        className="flex items-center gap-2 text-xs text-foreground-muted"
                       >
-                        <span className="h-1 w-1 rounded-full bg-[#6c63ff] animate-pulse" />
+                        <span className="h-1 w-1 rounded-full bg-primary animate-pulse" />
                         {task}
                       </motion.div>
                     )
