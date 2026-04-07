@@ -10,6 +10,7 @@ interface ResultsPanelProps {
   changesMade: string[];
   keywordsAdded: string[];
   isPaid: boolean;
+  mode?: "targeted" | "general";
 }
 
 async function downloadPDF(filename: string, content: string) {
@@ -87,6 +88,7 @@ export default function ResultsPanel({
   changesMade,
   keywordsAdded,
   isPaid,
+  mode = "targeted",
 }: ResultsPanelProps) {
   const [showChanges, setShowChanges] = useState(false);
   const [downloadingResume, setDownloadingResume] = useState(false);
@@ -193,7 +195,8 @@ export default function ResultsPanel({
         </motion.div>
       )}
 
-      {/* Cover Letter */}
+      {/* Cover Letter (targeted mode only) */}
+      {mode === "targeted" && (
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -227,6 +230,7 @@ export default function ResultsPanel({
           </div>
         </div>
       </motion.div>
+      )}
     </div>
   );
 }

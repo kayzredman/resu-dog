@@ -2,30 +2,32 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Loader2, AlertCircle } from "lucide-react";
+import { Zap, Loader2, AlertCircle, Target, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import DropZone from "@/components/optimizer/DropZone";
 import ScoreCard from "@/components/optimizer/ScoreCard";
 import ResultsPanel from "@/components/optimizer/ResultsPanel";
 
+interface ScoreData {
+  overall_score: number;
+  summary: string;
+  // Targeted mode
+  keyword_coverage?: number;
+  skills_alignment?: number;
+  formatting_compliance?: number;
+  matched_keywords?: string[];
+  missing_keywords?: string[];
+  // General mode
+  clarity?: number;
+  action_language?: number;
+  structure?: number;
+  completeness?: number;
+}
+
 interface OptimizeResult {
-  score_before: {
-    overall_score: number;
-    keyword_coverage: number;
-    skills_alignment: number;
-    formatting_compliance: number;
-    matched_keywords: string[];
-    missing_keywords: string[];
-    summary: string;
-  };
-  score_after: {
-    overall_score: number;
-    keyword_coverage: number;
-    skills_alignment: number;
-    formatting_compliance: number;
-    matched_keywords: string[];
-    missing_keywords: string[];
-    summary: string;
-  };
+  mode: "targeted" | "general";
+  score_before: ScoreData;
+  score_after: ScoreData;
   optimized_resume: string;
   changes_made: string[];
   keywords_added: string[];
@@ -41,13 +43,14 @@ export default function OptimizePage() {
     size: string;
   } | null>(null);
   const [jobDescription, setJobDescription] = useState("");
+  const [mode, setMode] = useState<"targeted" | "general">("targeted");
   const [step, setStep] = useState<Step>("idle");
   const [result, setResult] = useState<OptimizeResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
   const canSubmit =
     uploadedFile !== null &&
-    jobDescription.trim().length >= 50 &&
+    (mode === "general" || jobDescription.trim().length >= 50) &&
     step !== "loading";
 
   const handleSubmit = async () => {
@@ -59,7 +62,10 @@ export default function OptimizePage() {
 
     const formData = new FormData();
     formData.append("file", uploadedFile.file);
-    formData.append("job_description", jobDescription);
+    formData.append("mode", mode);
+    if (mode === "targeted") {
+      formData.append("job_description", jobDescription);
+    }
 
     try {
       // If no external API URL is set, route through Next.js mock API (dev mode)
@@ -91,13 +97,43 @@ export default function OptimizePage() {
           Optimize your resume
         </h1>
         <p className="mt-1.5 text-foreground-muted">
-          Upload your resume and paste the job description. We&apos;ll do the rest.
+          {mode === "targeted"
+            ? "Upload your resume and paste the job description. We\u2019ll tailor it for the role."
+            : "Upload your resume and we\u2019ll improve clarity, structure, and impact."}
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left — inputs */}
         <div className="space-y-5">
+          {/* Mode toggle */}
+          <div className="flex items-center gap-1 rounded-xl border border-line bg-surface p-1">
+            <button
+              onClick={() => setMode("targeted")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                mode === "targeted"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-foreground-muted hover:text-foreground"
+              )}
+            >
+              <Target className="h-3.5 w-3.5" />
+              Optimize for a Job
+            </button>
+            <button
+              onClick={() => setMode("general")}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                mode === "general"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-foreground-muted hover:text-foreground"
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              General Improvement
+            </button>
+          </div>
+
           {/* Step 1: Upload */}
           <div className="rounded-2xl border border-line bg-surface p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -119,26 +155,39 @@ export default function OptimizePage() {
             />
           </div>
 
-          {/* Step 2: Job Description */}
-          <div className="rounded-2xl border border-line bg-surface p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                2
-              </span>
-              <h2 className="font-semibold">Paste the job description</h2>
-            </div>
-            <textarea
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the full job description here — include requirements, responsibilities, and preferred qualifications for best results..."
-              rows={10}
-              className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
-            />
-            <div className="mt-1.5 flex justify-between text-xs text-foreground-muted">
-              <span>Minimum 50 characters</span>
-              <span>{jobDescription.length} chars</span>
-            </div>
-          </div>
+          {/* Step 2: Job Description (targeted mode only) */}
+          <AnimatePresence>
+            {mode === "targeted" && (
+              <motion.div
+                key="jd-section"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-2xl border border-line bg-surface p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                      2
+                    </span>
+                    <h2 className="font-semibold">Paste the job description</h2>
+                  </div>
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste the full job description here — include requirements, responsibilities, and preferred qualifications for best results..."
+                    rows={10}
+                    className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                  />
+                  <div className="mt-1.5 flex justify-between text-xs text-foreground-muted">
+                    <span>Minimum 50 characters</span>
+                    <span>{jobDescription.length} chars</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Submit */}
           <button
@@ -149,12 +198,12 @@ export default function OptimizePage() {
             {step === "loading" ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Optimizing your resume…
+                {mode === "targeted" ? "Optimizing your resume…" : "Improving your resume…"}
               </>
             ) : (
               <>
                 <Zap className="h-4 w-4" />
-                Optimize my resume
+                {mode === "targeted" ? "Optimize for this job" : "Improve my resume"}
               </>
             )}
           </button>
@@ -190,7 +239,9 @@ export default function OptimizePage() {
                   Your score and optimized resume will appear here
                 </p>
                 <p className="text-xs text-foreground-dim mt-1">
-                  Upload a resume and paste a job description to get started
+                  {mode === "targeted"
+                    ? "Upload a resume and paste a job description to get started"
+                    : "Upload your resume and we\u2019ll handle the rest"}
                 </p>
               </motion.div>
             )}
@@ -206,10 +257,15 @@ export default function OptimizePage() {
                 <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
                 <p className="text-sm font-medium">Optimizing your resume…</p>
                 <p className="text-xs text-foreground-muted mt-1">
-                  Scoring, rewriting, and generating cover letter in parallel
+                  {mode === "targeted"
+                    ? "Scoring, rewriting, and generating cover letter in parallel"
+                    : "Analyzing and improving your resume with AI"}
                 </p>
                 <div className="mt-5 space-y-2 w-full max-w-xs">
-                  {["Parsing resume", "Scoring against job description", "Rewriting with AI", "Generating cover letter"].map(
+                  {(mode === "targeted"
+                    ? ["Parsing resume", "Scoring against job description", "Rewriting with AI", "Generating cover letter"]
+                    : ["Parsing resume", "Scoring resume quality", "Rewriting with AI", "Finalizing improvements"]
+                  ).map(
                     (task, i) => (
                       <motion.div
                         key={task}
@@ -237,6 +293,7 @@ export default function OptimizePage() {
                 <ScoreCard
                   before={result.score_before}
                   after={result.score_after}
+                  mode={result.mode}
                   isLocked={false}
                 />
                 <ResultsPanel
@@ -244,6 +301,7 @@ export default function OptimizePage() {
                   coverLetter={result.cover_letter}
                   changesMade={result.changes_made}
                   keywordsAdded={result.keywords_added}
+                  mode={result.mode}
                   isPaid={true}
                 />
               </motion.div>

@@ -160,6 +160,79 @@ ${jobDescription}`,
   return JSON.parse(res.choices[0].message.content!);
 }
 
+// ─── General mode (no JD) functions ─────────────────────────────────────────
+
+async function optimizeResumeGeneral(client: OpenAI, resumeText: string) {
+  const res = await client.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "user",
+        content: `You are an expert resume writer. Improve this resume for general quality — clarity, action language, structure, and completeness.
+
+Rules:
+- ONLY rewrite existing content. Do NOT fabricate experience, skills, or achievements.
+- Strengthen bullet points with powerful action verbs and quantified achievements where possible.
+- Improve structure and section ordering for readability.
+- Remove tables, columns, graphics — use clean single-column plain text.
+- Use clear section headers (EXPERIENCE, EDUCATION, SKILLS, SUMMARY, etc.)
+- Keep all dates, job titles, and company names exactly as they are.
+
+Return ONLY valid JSON:
+{
+  "optimized_resume": "<full rewritten resume as plain text>",
+  "changes_made": ["<change 1>", "<change 2>"]
+}
+
+RESUME:
+${resumeText}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.3,
+  });
+  return JSON.parse(res.choices[0].message.content!);
+}
+
+async function scoreResumeGeneral(client: OpenAI, resumeText: string) {
+  const res = await client.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "user",
+        content: `You are an expert resume coach. Evaluate this resume on general quality — not for a specific job.
+
+Scoring criteria:
+- clarity: Is the resume easy to read? Are sentences clear, concise, and free of jargon? (0-100)
+- action_language: Are bullet points written with strong action verbs and specific achievements? (0-100)
+- structure: Is information logically organized with appropriate sections and formatting? (0-100)
+- completeness: Does it include all critical sections (contact, experience, education, skills) with enough detail? (0-100)
+
+Rules:
+- overall_score is the average of the four criteria rounded to the nearest integer.
+- The summary describes the resume's general quality in one sentence.
+- Be precise and consistent — give noticeably different scores for different quality levels.
+
+Return ONLY valid JSON:
+{
+  "overall_score": <integer 0-100>,
+  "clarity": <integer 0-100>,
+  "action_language": <integer 0-100>,
+  "structure": <integer 0-100>,
+  "completeness": <integer 0-100>,
+  "summary": "<one sentence general quality summary>"
+}
+
+RESUME:
+${resumeText}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.1,
+  });
+  return JSON.parse(res.choices[0].message.content!);
+}
+
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -175,10 +248,18 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const jobDescription = formData.get("job_description") as string | null;
+    const mode = (formData.get("mode") as string | null) ?? "targeted";
 
-    if (!file || !jobDescription) {
+    if (!file) {
       return NextResponse.json(
-        { detail: "Missing file or job_description." },
+        { detail: "Missing resume file." },
+        { status: 400 }
+      );
+    }
+
+    if (mode === "targeted" && !jobDescription) {
+      return NextResponse.json(
+        { detail: "Missing job_description for targeted mode." },
         { status: 400 }
       );
     }
@@ -194,19 +275,41 @@ export async function POST(req: NextRequest) {
 
     const client = new OpenAI({ apiKey });
 
+    if (mode === "general") {
+      // General mode: no JD — score + optimize independently, no cover letter
+      const [scoreBefore, optimizeResult] = await Promise.all([
+        scoreResumeGeneral(client, resumeText),
+        optimizeResumeGeneral(client, resumeText),
+      ]);
+
+      const scoreAfter = await scoreResumeGeneral(client, optimizeResult.optimized_resume);
+
+      return NextResponse.json({
+        mode: "general",
+        score_before: scoreBefore,
+        score_after: scoreAfter,
+        optimized_resume: optimizeResult.optimized_resume,
+        changes_made: optimizeResult.changes_made ?? [],
+        keywords_added: [],
+        cover_letter: "",
+      });
+    }
+
+    // Targeted mode — existing flow
     // Step 1 — score original + optimize in parallel (both only need original text + JD)
     const [scoreBefore, optimizeResult] = await Promise.all([
-      scoreResume(client, resumeText, jobDescription),
-      optimizeResume(client, resumeText, jobDescription),
+      scoreResume(client, resumeText, jobDescription!),
+      optimizeResume(client, resumeText, jobDescription!),
     ]);
 
     // Step 2 — score the optimized resume + generate cover letter in parallel
     const [scoreAfter, coverResult] = await Promise.all([
-      scoreResume(client, optimizeResult.optimized_resume, jobDescription),
-      generateCoverLetter(client, optimizeResult.optimized_resume, jobDescription),
+      scoreResume(client, optimizeResult.optimized_resume, jobDescription!),
+      generateCoverLetter(client, optimizeResult.optimized_resume, jobDescription!),
     ]);
 
     return NextResponse.json({
+      mode: "targeted",
       score_before: scoreBefore,
       score_after: scoreAfter,
       optimized_resume: optimizeResult.optimized_resume,

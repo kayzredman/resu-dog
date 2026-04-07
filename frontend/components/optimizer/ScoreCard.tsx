@@ -6,17 +6,24 @@ import { cn } from "@/lib/utils";
 
 interface ScoreData {
   overall_score: number;
-  keyword_coverage: number;
-  skills_alignment: number;
-  formatting_compliance: number;
-  matched_keywords: string[];
-  missing_keywords: string[];
   summary: string;
+  // Targeted mode
+  keyword_coverage?: number;
+  skills_alignment?: number;
+  formatting_compliance?: number;
+  matched_keywords?: string[];
+  missing_keywords?: string[];
+  // General mode
+  clarity?: number;
+  action_language?: number;
+  structure?: number;
+  completeness?: number;
 }
 
 interface ScoreCardProps {
   before: ScoreData;
   after: ScoreData;
+  mode?: "targeted" | "general";
   isLocked?: boolean;
 }
 
@@ -94,7 +101,7 @@ function ScoreBar({ label, icon: Icon, value }: { label: string; icon: React.Ele
   );
 }
 
-export default function ScoreCard({ before, after, isLocked = false }: ScoreCardProps) {
+export default function ScoreCard({ before, after, mode = "targeted", isLocked = false }: ScoreCardProps) {
   const improvement = after.overall_score - before.overall_score;
   const afterColor = getScoreColor(after.overall_score);
   const heroRadius = 56;
@@ -184,13 +191,24 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
       {/* Score breakdown bars */}
         <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
         <h3 className="font-semibold text-sm mb-2">Score Breakdown</h3>
-        <ScoreBar label="Keyword Coverage" icon={Tag} value={after.keyword_coverage} />
-        <ScoreBar label="Skills Alignment" icon={Cpu} value={after.skills_alignment} />
-        <ScoreBar label="Formatting Compliance" icon={AlignLeft} value={after.formatting_compliance} />
+        {mode === "general" ? (
+          <>
+            <ScoreBar label="Clarity" icon={AlignLeft} value={after.clarity ?? 0} />
+            <ScoreBar label="Action Language" icon={Cpu} value={after.action_language ?? 0} />
+            <ScoreBar label="Structure" icon={Tag} value={after.structure ?? 0} />
+            <ScoreBar label="Completeness" icon={TrendingUp} value={after.completeness ?? 0} />
+          </>
+        ) : (
+          <>
+            <ScoreBar label="Keyword Coverage" icon={Tag} value={after.keyword_coverage ?? 0} />
+            <ScoreBar label="Skills Alignment" icon={Cpu} value={after.skills_alignment ?? 0} />
+            <ScoreBar label="Formatting Compliance" icon={AlignLeft} value={after.formatting_compliance ?? 0} />
+          </>
+        )}
       </div>
 
-      {/* Keywords */}
-      {after.matched_keywords.length > 0 && (
+      {/* Keywords (targeted mode only) */}
+      {mode === "targeted" && after.matched_keywords && after.matched_keywords.length > 0 && (
         <div className="rounded-2xl border border-line bg-surface p-6">
           <h3 className="font-semibold text-sm mb-3">
             Matched Keywords{" "}
@@ -209,7 +227,7 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
             ))}
           </div>
 
-          {after.missing_keywords.length > 0 && (
+            {after.missing_keywords && after.missing_keywords.length > 0 && (
             <>
               <h3 className="font-semibold text-sm mt-4 mb-3">
                 Missing Keywords{" "}
