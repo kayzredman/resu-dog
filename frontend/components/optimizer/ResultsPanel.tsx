@@ -12,6 +12,34 @@ interface ResultsPanelProps {
   isPaid: boolean;
 }
 
+async function downloadPDF(filename: string, content: string) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+  const margin = 15;
+  const pageW = doc.internal.pageSize.getWidth();
+  const maxW = pageW - margin * 2;
+  const lineH = 5.5;
+  const fontSize = 10;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(fontSize);
+
+  let y = margin;
+  const lines = doc.splitTextToSize(content, maxW) as string[];
+
+  for (const line of lines) {
+    if (y + lineH > doc.internal.pageSize.getHeight() - margin) {
+      doc.addPage();
+      y = margin;
+    }
+    doc.text(line, margin, y);
+    y += lineH;
+  }
+
+  doc.save(filename);
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -61,6 +89,20 @@ export default function ResultsPanel({
   isPaid,
 }: ResultsPanelProps) {
   const [showChanges, setShowChanges] = useState(false);
+  const [downloadingResume, setDownloadingResume] = useState(false);
+  const [downloadingCover, setDownloadingCover] = useState(false);
+
+  const handleResumeDownload = async () => {
+    setDownloadingResume(true);
+    await downloadPDF("optimized-resume.pdf", optimizedResume);
+    setDownloadingResume(false);
+  };
+
+  const handleCoverDownload = async () => {
+    setDownloadingCover(true);
+    await downloadPDF("cover-letter.pdf", coverLetter);
+    setDownloadingCover(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -80,11 +122,12 @@ export default function ResultsPanel({
             <div className="flex items-center gap-2">
               {isPaid && <CopyButton text={optimizedResume} />}
               <button
-                disabled={!isPaid}
+                disabled={!isPaid || downloadingResume}
+                onClick={handleResumeDownload}
                 className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileDown className="h-3.5 w-3.5" />
-                Download PDF
+                {downloadingResume ? "Generating…" : "Download PDF"}
               </button>
             </div>
           </div>
@@ -163,7 +206,19 @@ export default function ResultsPanel({
         <div className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold">Cover Letter</h3>
-            {isPaid && <CopyButton text={coverLetter} />}
+            <div className="flex items-center gap-2">
+              {isPaid && <CopyButton text={coverLetter} />}
+              {isPaid && (
+                <button
+                  onClick={handleCoverDownload}
+                  disabled={downloadingCover}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  {downloadingCover ? "Generating…" : "Download PDF"}
+                </button>
+              )}
+            </div>
           </div>
             <div className="rounded-xl bg-background p-4 max-h-[280px] overflow-y-auto">
             <p className="text-sm text-foreground-soft whitespace-pre-wrap leading-relaxed">

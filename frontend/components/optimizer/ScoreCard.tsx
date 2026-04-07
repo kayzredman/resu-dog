@@ -96,26 +96,69 @@ function ScoreBar({ label, icon: Icon, value }: { label: string; icon: React.Ele
 
 export default function ScoreCard({ before, after, isLocked = false }: ScoreCardProps) {
   const improvement = after.overall_score - before.overall_score;
+  const afterColor = getScoreColor(after.overall_score);
+  const heroRadius = 56;
+  const heroCircumference = 2 * Math.PI * heroRadius;
 
   return (
     <div className="space-y-4">
-      {/* Score rings — before/after */}
+      {/* Hero optimized score */}
       <div className="rounded-2xl border border-line bg-surface p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-semibold">Compatibility Score</h3>
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-widest text-foreground-muted">
+            Optimized ATS Score
+          </span>
+
+          <div className="relative h-[140px] w-[140px]">
+            <svg className="rotate-[-90deg]" width="140" height="140">
+              <circle cx="70" cy="70" r={heroRadius} fill="none" stroke="var(--line)" strokeWidth="10" />
+              <motion.circle
+                cx="70" cy="70" r={heroRadius}
+                fill="none"
+                stroke={afterColor}
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={heroCircumference}
+                initial={{ strokeDashoffset: heroCircumference }}
+                animate={{ strokeDashoffset: heroCircumference - (after.overall_score / 100) * heroCircumference }}
+                transition={{ duration: 1.4, ease: "easeOut" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <motion.span
+                className="text-5xl font-extrabold tabular-nums"
+                style={{ color: afterColor }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+              >
+                {after.overall_score}
+              </motion.span>
+              <span className="text-xs text-foreground-muted">/ 100</span>
+            </div>
+          </div>
+
           {improvement > 0 && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 }}
-              className="flex items-center gap-1.5 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 px-3 py-1 text-xs font-bold text-[#22c55e]"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              className="flex items-center gap-2 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/25 px-4 py-1.5 text-sm font-bold text-[#22c55e]"
             >
-              <TrendingUp className="h-3 w-3" />
-              +{improvement} pts
+              <TrendingUp className="h-4 w-4" />
+              +{improvement} pts improvement from original
             </motion.div>
           )}
-        </div>
 
+          {!isLocked && after.summary && (
+            <p className="text-xs text-center text-foreground-muted italic max-w-xs">{after.summary}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Before / After comparison */}
+      <div className="rounded-2xl border border-line bg-surface p-6">
+        <h3 className="font-semibold text-sm mb-5">Before vs After</h3>
         <div className="flex items-center justify-around">
           <ScoreRing
             score={before.overall_score}
@@ -125,22 +168,17 @@ export default function ScoreCard({ before, after, isLocked = false }: ScoreCard
           <div className="text-3xl font-black text-line">→</div>
           <div className={cn("relative", isLocked && "select-none")}>
             {isLocked && (
-              <div
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-background/60">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-background/60">
                 <span className="text-xs text-foreground-muted text-center px-2">Upgrade to unlock</span>
               </div>
             )}
             <ScoreRing
               score={isLocked ? 0 : after.overall_score}
               label="After"
-              color={getScoreColor(after.overall_score)}
+              color={afterColor}
             />
           </div>
         </div>
-
-        {!isLocked && (
-          <p className="mt-4 text-xs text-center text-foreground-muted italic">{after.summary}</p>
-        )}
       </div>
 
       {/* Score breakdown bars */}

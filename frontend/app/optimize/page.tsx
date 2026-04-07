@@ -62,8 +62,9 @@ export default function OptimizePage() {
     formData.append("job_description", jobDescription);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${apiUrl}/api/v1/optimize/`, {
+      // If no external API URL is set, route through Next.js mock API (dev mode)
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+      const res = await fetch(`${apiBase}/api/v1/optimize/`, {
         method: "POST",
         body: formData,
       });
@@ -243,7 +244,7 @@ export default function OptimizePage() {
                   coverLetter={result.cover_letter}
                   changesMade={result.changes_made}
                   keywordsAdded={result.keywords_added}
-                  isPaid={false}
+                  isPaid={true}
                 />
               </motion.div>
             )}
