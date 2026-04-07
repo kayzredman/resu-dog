@@ -44,6 +44,97 @@ The tool is designed to be **so obviously valuable on first use** that users con
 
 ---
 
+## Roadmap
+
+### ✅ Phase 1 — Core Optimizer (shipped)
+- Upload CV (PDF / DOCX / TXT) + paste job description
+- GPT-4o rewrites the resume for ATS compatibility
+- Independent before/after compatibility scores (keyword coverage, skills alignment, formatting)
+- Cover letter generated from the optimized resume
+- PDF download for optimized resume + cover letter
+- Light/dark theme with semantic token system
+- Next.js Route Handler — no separate backend required at runtime
+
+---
+
+### 🔨 Phase 2A — JD-Optional Mode *(next up)*
+
+Two modes on the optimize page, toggled via a pill/tab UI:
+
+**Mode 1: Targeted Optimization** (existing)
+- Upload CV + paste job description
+- Scored against the JD: keyword coverage, skills alignment, formatting
+
+**Mode 2: General CV Improvement** (new)
+- Upload CV only — no JD needed
+- AI improves structure, action language, quantification, ATS formatting
+- Scoring shifts to: Clarity, Action Language, Structure, Completeness
+- Cover letter replaced with an "Improvement Summary" panel
+
+Implementation: toggle on optimize page + new prompt branch (`mode: "general" | "targeted"`) in the route handler.
+
+---
+
+### 🧱 Phase 2B — CV Builder Wizard *(new page `/build`)*
+
+For candidates who have no existing CV. AI writes one from scratch:
+
+| Step | What happens |
+|---|---|
+| 1 | Paste job description |
+| 2 | AI reads JD and generates **targeted questions** specific to that role (not generic) |
+| 3 | User fills a structured multi-step form (e.g. for "Head of IT": team sizes, network projects, certifications) |
+| 4 | AI writes a full tailored CV + scores it against the JD immediately |
+| 5 | Download PDF |
+
+**Key design principle:** questions are dynamically generated from the JD — so a software engineer and a finance director get completely different questions. Never hardcoded.
+
+**API design:** `POST /api/v1/build` with two stages:
+1. `analyze-jd` → returns structured question list
+2. `write-cv` → takes answers + JD, returns full CV + score
+
+---
+
+### 🌐 Phase 3 — Public Profile Page (`/p/[username]`)
+
+A shareable resume landing page — inspired by Udemy's course page layout:
+
+| Udemy Element | Resume Equivalent |
+|---|---|
+| Course title + subtitle | Name, job title, tagline |
+| Instructor photo | Profile picture |
+| "What you'll learn" checklist | Key skills / what I bring |
+| Sticky pricing card (right) | Sticky **"Hire Me / Download CV / Contact"** CTA |
+| Course content timeline | Work experience timeline |
+| Instructor bio | Personal pitch / about me |
+| Reviews section | Recommendations / testimonials |
+
+**URL format:** `resu-dog.com/p/john-doe`
+
+**Why it matters:**
+- Candidates share the link when applying — hiring manager lands on a scroll experience instead of opening a PDF
+- Dual strategy: ATS gets the clean PDF, humans get the page
+- Analytics ("3 recruiters viewed your page this week") = a very sticky paid feature
+- Every page has a subtle "Made with Resu-Dog" footer → viral loop
+
+> Profile data is pulled from the optimized resume — users cannot freestyle input, keeping it honest and connected to the core product.
+
+---
+
+### 🌍 Phase 4 — Platform Expansion Modes
+
+| Mode | Target Market |
+|---|---|
+| North American Resume (ATS) | Core product — Phase 1 ✅ |
+| LinkedIn Profile Optimizer | 1B+ users, massive TAM |
+| WES / Credential Evaluation | Immigrants, international students |
+| UK / AU / CA CV Format | International job seekers |
+| ATS-specific (Workday, Greenhouse, Lever) | Power users, recruiters |
+
+Each mode is a separate feature/upsell tier. The architecture already supports a `profile_mode` field in the data model.
+
+---
+
 ## Planned Features (Phase 2+)
 
 ### Resume Profile Page
