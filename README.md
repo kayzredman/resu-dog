@@ -1,16 +1,16 @@
 # Resu-Dog 🐾
 
-**AI-Powered Resume Optimization System**
+**AI-Powered Resume Optimization & Career Intelligence Platform**
 
-> Upload your resume. Paste the job description. Get back an ATS-optimized resume, a compatibility score, and a personalized cover letter — in seconds.
+> Upload your resume. Paste the job description. Get back an ATS-optimized resume, a recruiter-grade shortlist assessment, a skills gap analysis with a closure roadmap, and a personalized cover letter — in seconds.
 
 ---
 
 ## Product Vision
 
-Most people lose jobs before a human ever reads their resume. ATS (Applicant Tracking Systems) filter out 75%+ of applicants automatically. Resu-Dog fixes that — by using AI to rewrite, score, and optimize resumes specifically for each job description.
+Most people lose jobs before a human ever reads their resume. ATS systems filter out 75%+ of applicants automatically. Resu-Dog fixes that — and goes further. We don't sugarcoat. We give candidates a **brutally honest, actionable picture** of where they stand: what's working, what's missing, and exactly how to fix it.
 
-The tool is designed to be **so obviously valuable on first use** that users convert to paid without friction. The free tier shows the problem (low score). The paid tier solves it (optimized resume + cover letter download).
+**The ethical line we hold:** We help users present what they have more powerfully. We never fabricate skills, credentials, or experience. Trust is the product.
 
 ---
 
@@ -22,24 +22,36 @@ The tool is designed to be **so obviously valuable on first use** that users con
 - Max file size: 10MB
 
 ### 2. Compatibility Score (Before & After)
-- Score shown **before** optimization (the hook — user sees how bad it is)
-- Score shown **after** optimization (the payoff — user sees the improvement)
-- Breakdown across three dimensions:
-  - **Keyword Coverage** — how many JD keywords appear in the resume
-  - **Skills Alignment** — how well the skills match the role requirements
-  - **Formatting Compliance** — whether the resume passes ATS formatting rules
-- After score is **blurred/teased on free tier** — visible only on paid
+- **Targeted mode**: Keyword Coverage, Skills Alignment, Formatting Compliance
+- **General mode**: Clarity, Action Language, Structure, Completeness
+- Independent before/after scoring — never in the same AI call
+- After score teased on free tier — visible on paid
 
 ### 3. Optimized Resume
-- Experiences rewritten with **strong action verbs**
-- **Keywords from the job description** naturally incorporated
-- **ATS-clean formatting** — no tables, columns, headers/footers that break parsers
-- Downloadable as PDF and DOCX (paid tier)
+- Every bullet follows: **[Action Verb] + [Specific Achievement] + [Measurable Outcome]**
+- Weak openers (`Responsible for`, `Helped`, `Assisted`) explicitly banned in prompts
+- Keywords from JD naturally incorporated
+- ATS-clean formatting — no tables, columns, broken headers
+- Downloadable as PDF (paid tier)
 
-### 4. Matching Cover Letter
-- Personalized — **not a template**
+### 4. Shortlist Assessment
+- Recruiter-perspective verdict: **Low / Fair / Good / Strong** probability of shortlisting
+- Strengths (referencing specific resume content)
+- Critical gaps vs the JD
+- 3 actionable quick wins
+- Red flags a recruiter would notice
+- Assessment-driven refinement: quick wins + gaps are **automatically applied** back into the resume before final delivery
+
+### 5. Skills Gap Analysis *(targeted mode only)*
+- **Skills Heatmap**: pill grid showing every JD skill as 🟢 Matched / 🟡 Transferable / 🔴 Gap
+- **Transferable Bridges**: for each amber skill, one honest sentence mapping what they do have
+- **Gap Closure Roadmap**: for each red gap, a specific cert / side project / course recommendation
+- Collapses to a summary banner: `"12 matched · 3 transferable · 2 gaps"`
+
+### 6. Matching Cover Letter *(targeted mode only)*
+- Personalized — not a template
 - Connects specific candidate experience to specific role requirements
-- Written to complement the optimized resume
+- Strong opening hook — no "Dear Hiring Manager"
 - Download/copy (paid tier)
 
 ---
@@ -49,49 +61,80 @@ The tool is designed to be **so obviously valuable on first use** that users con
 ### ✅ Phase 1 — Core Optimizer (shipped)
 - Upload CV (PDF / DOCX / TXT) + paste job description
 - GPT-4o rewrites the resume for ATS compatibility
-- Independent before/after compatibility scores (keyword coverage, skills alignment, formatting)
+- Independent before/after compatibility scores
 - Cover letter generated from the optimized resume
-- PDF download for optimized resume + cover letter
+- PDF download
 - Light/dark theme with semantic token system
-- Next.js Route Handler — no separate backend required at runtime
+- Next.js Route Handler — no separate backend required
+
+### ✅ Phase 2A — JD-Optional Mode (shipped)
+- **Targeted mode**: Upload CV + paste JD → scored against the JD
+- **General mode**: Upload CV only → scored on general quality (Clarity, Action Language, Structure, Completeness)
+- Mode toggle (pill UI) on optimize page
+
+### ✅ Phase 2B — CV Builder Wizard (shipped, `/build`)
+- Paste job description → AI generates targeted questions specific to that role
+- User fills multi-step structured form (questions differ per role — not generic)
+- AI writes full tailored CV + scores + shortlist assessment
+- AI Assist per question ("Help me write this" / "Rewrite with AI")
+- Assessment-driven refinement applied before final delivery
+
+### ✅ Phase 2C — Shortlist Assessment + Assessment-Driven Refinement (shipped)
+- Recruiter-grade assessment panel after every optimize/build
+- `refineWithAssessment()` applies quick wins + critical gaps back into the resume
+- Merged `changes_made` list shows both optimize + refinement improvements
+
+### ✅ Phase 2D — Skills Gap Analysis (shipped)
+- Skills heatmap (🟢 Matched / 🟡 Transferable / 🔴 Gap) as a scannable pill grid
+- Transferable bridges: one honest sentence mapping existing experience to each amber skill
+- Gap closure roadmap: specific named certs/courses/projects for each red gap
+- Collapsible `GapAnalysis.tsx` card below `ShortlistAssessment`
+- Targeted mode only — hidden in general mode (no JD to compare against)
 
 ---
 
-### 🔨 Phase 2A — JD-Optional Mode *(next up)*
+### 🔨 Phase 3 — Public Profile Page (`/p/preview` → `/p/[slug]`)
 
-Two modes on the optimize page, toggled via a pill/tab UI:
+**Flow:**
+1. User completes optimize or build → sees results as normal
+2. "Create Profile Page →" button appears in ResultsPanel header
+3. One GPT call parses the optimized resume into structured profile JSON
+4. Stored in `localStorage` → user redirected to `/p/preview`
+5. When auth ships, `/p/preview` becomes a real shareable `/p/john-doe`
 
-**Mode 1: Targeted Optimization** (existing)
-- Upload CV + paste job description
-- Scored against the JD: keyword coverage, skills alignment, formatting
+**Page layout (Udemy-inspired, two-column):**
+```
+Hero: Avatar (initials) · Name · Title · Location · Open to Work badge · ATS score
+Main (scrolls): What I bring · Experience timeline · Education · Skills pill grid
+Sidebar (sticky): Stats · Hire Me CTA · Download CV · LinkedIn · "Made with resu-dog"
+```
 
-**Mode 2: General CV Improvement** (new)
-- Upload CV only — no JD needed
-- AI improves structure, action language, quantification, ATS formatting
-- Scoring shifts to: Clarity, Action Language, Structure, Completeness
-- Cover letter replaced with an "Improvement Summary" panel
+**Animations (Framer Motion):**
+- Timeline sections fade in on scroll (IntersectionObserver)
+- Stats count up on sidebar viewport entry  
+- Skill pills stagger in
+- Smooth hero entrance
 
-Implementation: toggle on optimize page + new prompt branch (`mode: "general" | "targeted"`) in the route handler.
+**Export As — same optimized content, different formats:**
 
----
-
-### 🧱 Phase 2B — CV Builder Wizard *(new page `/build`)*
-
-For candidates who have no existing CV. AI writes one from scratch:
-
-| Step | What happens |
+| Format | What changes |
 |---|---|
-| 1 | Paste job description |
-| 2 | AI reads JD and generates **targeted questions** specific to that role (not generic) |
-| 3 | User fills a structured multi-step form (e.g. for "Head of IT": team sizes, network projects, certifications) |
-| 4 | AI writes a full tailored CV + scores it against the JD immediately |
-| 5 | Download PDF |
+| **ATS PDF** (current) | Clean plain text, ATS-parsed |
+| **LinkedIn Profile** | Splits into Headline, About, Experience entries, Skills — copy-pasteable sections |
+| **WES / Immigration CV** | Credential equivalency framing, Canadian format, DOB/nationality fields included |
+| **UK / EU CV** | 2-page norm, hobbies, "references available", avoids US conventions |
 
-**Key design principle:** questions are dynamically generated from the JD — so a software engineer and a finance director get completely different questions. Never hardcoded.
+Each format = one extra GPT call with different formatting rules. Architecture: `POST /api/v1/export` with `format` field.
 
-**API design:** `POST /api/v1/build` with two stages:
-1. `analyze-jd` → returns structured question list
-2. `write-cv` → takes answers + JD, returns full CV + score
+---
+
+### 🗺️ Phase 4 — Auth + Profiles + Paywall
+- Supabase Auth (email + Google OAuth)
+- Save optimize/build results per user
+- Real shareable `/p/[username]` URLs
+- Stripe paywall — remove `isPaid={true}` hardcode, real subscription tier
+
+### 🌐 Phase 3 — Public Profile Page (`/p/[username]`)
 
 ---
 

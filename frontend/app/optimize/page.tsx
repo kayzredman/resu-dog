@@ -8,6 +8,7 @@ import DropZone from "@/components/optimizer/DropZone";
 import ScoreCard from "@/components/optimizer/ScoreCard";
 import ResultsPanel from "@/components/optimizer/ResultsPanel";
 import ShortlistAssessment from "@/components/optimizer/ShortlistAssessment";
+import GapAnalysis from "@/components/optimizer/GapAnalysis";
 import type { AssessmentData } from "@/components/optimizer/ShortlistAssessment";
 
 interface ScoreData {
@@ -92,8 +93,13 @@ export default function OptimizePage() {
     }
   };
 
+  const hasDone = step === "done" && result !== null;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className={cn(
+      "mx-auto px-4 py-10 sm:px-6 lg:px-8 transition-all duration-500",
+      hasDone ? "max-w-screen-xl" : "max-w-6xl"
+    )}>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight">
@@ -106,9 +112,15 @@ export default function OptimizePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={cn(
+        "grid grid-cols-1 gap-6",
+        hasDone ? "lg:grid-cols-[360px_1fr]" : "lg:grid-cols-2"
+      )}>
         {/* Left — inputs */}
-        <div className="space-y-5">
+        <div className={cn(
+          "space-y-5",
+          hasDone && "lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto"
+        )}>
           {/* Mode toggle */}
           <div className="flex items-center gap-1 rounded-xl border border-line bg-surface p-1">
             <button
@@ -196,7 +208,7 @@ export default function OptimizePage() {
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark hover:shadow-[rgba(108,99,255,0.45)] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark hover:shadow-[rgba(108,99,255,0.45)] active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
           >
             {step === "loading" ? (
               <>
@@ -302,6 +314,13 @@ export default function OptimizePage() {
                 {result.assessment && (
                   <ShortlistAssessment assessment={result.assessment} />
                 )}
+                {result.mode === "targeted" && result.assessment?.skills_heatmap?.length ? (
+                  <GapAnalysis
+                    skillsHeatmap={result.assessment.skills_heatmap}
+                    transferableBridges={result.assessment.transferable_bridges ?? []}
+                    gapRoadmap={result.assessment.gap_roadmap ?? []}
+                  />
+                ) : null}
                 <ResultsPanel
                   optimizedResume={result.optimized_resume}
                   coverLetter={result.cover_letter}

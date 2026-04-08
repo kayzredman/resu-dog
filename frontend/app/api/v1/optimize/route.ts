@@ -50,7 +50,11 @@ Your task: Rewrite the resume to maximize ATS compatibility with the job descrip
 
 Rules:
 - ONLY rewrite existing content. Do NOT fabricate experience, skills, or achievements.
-- Rewrite bullet points using strong action verbs.
+- Every experience bullet MUST follow this exact formula: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
+  Example: "Reduced deployment time by 40% by migrating CI pipeline to GitHub Actions."
+- If no exact metric exists in the original, infer a reasonable one from context (e.g. ~30%, 5×, $X0K, X team members).
+- NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in', 'Participated in', 'Contributed to'.
+- Each bullet must be one tight sentence — aim for 15–22 words.
 - Naturally incorporate relevant keywords from the job description.
 - Keep all dates, job titles, and company names exactly as they are.
 - Remove tables, columns, headers/footers — use clean single-column plain text.
@@ -146,7 +150,16 @@ Return ONLY valid JSON:
   "strengths": ["<specific strength from the resume>", "<specific strength>", "<specific strength>"],
   "critical_gaps": ["<specific gap or mismatch vs the JD>", "<gap>"],
   "quick_wins": ["<one concrete actionable change — be specific>", "<change>", "<change>"],
-  "red_flags": ["<recruiter concern — e.g. short tenure, vague bullets, unexplained gap>"]
+  "red_flags": ["<recruiter concern — e.g. short tenure, vague bullets, unexplained gap>"],
+  "skills_heatmap": [
+    { "skill": "<JD skill name>", "status": "<matched | transferable | gap>" }
+  ],
+  "transferable_bridges": [
+    { "skill": "<skill name>", "bridge": "<one honest sentence mapping what they DO have to this requirement>" }
+  ],
+  "gap_roadmap": [
+    { "skill": "<skill name>", "action": "<specific cert / project / course to close this gap — name it explicitly>" }
+  ]
 }
 
 Rules:
@@ -155,6 +168,9 @@ Rules:
 - quick_wins: exactly 3 items. Must be doable by the candidate right now (not "get more experience").
 - red_flags: 0–3 items. Only genuine recruiter concerns. If none, return [].
 - shortlist_probability: Low = very unlikely, Fair = possible but significant gaps, Good = likely shortlisted, Strong = very strong match.
+- skills_heatmap: list EVERY skill/tool/technology mentioned in the JD. Status: "matched" = clearly present in resume, "transferable" = not exact but adjacent experience exists, "gap" = genuinely missing.
+- transferable_bridges: include ONLY skills with status "transferable". For each, write one honest sentence showing how existing experience maps across.
+- gap_roadmap: include ONLY skills with status "gap". For each, name a specific cert, online course, or side project the candidate can do (e.g. "Complete the AWS Solutions Architect Associate cert on A Cloud Guru — 2–4 weeks").
 
 OPTIMIZED RESUME:
 ${optimizedResume}
@@ -232,6 +248,64 @@ ${jobDescription}`,
 
 // ─── General mode (no JD) functions ─────────────────────────────────────────
 
+// ─── Assessment-driven refinement ────────────────────────────────────────────
+
+async function refineWithAssessment(
+  client: OpenAI,
+  optimizedResume: string,
+  assessment: Record<string, unknown>,
+  jobDescription: string | null
+) {
+  const quickWins = (assessment.quick_wins as string[])
+    .map((w, i) => `${i + 1}. ${w}`)
+    .join("\n");
+  const gaps = ((assessment.critical_gaps as string[]) ?? [])
+    .map((g) => `- ${g}`)
+    .join("\n");
+  const jdSection = jobDescription
+    ? `\nJOB DESCRIPTION (for keyword context):\n${jobDescription}`
+    : "";
+
+  const res = await client.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "user",
+        content: `You are an expert resume writer. This resume has already been ATS-optimized, but a recruiter assessment identified specific improvements. Apply ALL of them to produce the definitive final version.
+
+IMPROVEMENTS TO APPLY:
+${gaps ? `Critical gaps to address:\n${gaps}\n` : ""}
+Quick wins to implement:
+${quickWins}
+
+Rules:
+- Apply EVERY quick win and address EVERY critical gap where possible within the existing content.
+- Do NOT fabricate experience, companies, dates, qualifications, or skills not present in the original.
+- Every experience bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
+  If no exact metric exists in the current text, infer a credible one from context (e.g. "supporting 500+ daily users", "reducing processing time by ~25%").
+- NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in'.
+- Each bullet should be one tight sentence — 15–22 words.
+- Maintain clean single-column ATS formatting: clear section headers, no tables/columns.
+- Keep all dates, job titles, and company names exactly as they are.
+- The result should be the strongest possible honest version of this resume.
+
+Return ONLY valid JSON:
+{
+  "refined_resume": "<full final resume as plain text>",
+  "improvements_applied": ["<specific change made>", "<change>"]
+}
+
+CURRENT OPTIMIZED RESUME:
+${optimizedResume}${jdSection}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.3,
+  });
+  return JSON.parse(res.choices[0].message.content!);
+}
+
+
 async function optimizeResumeGeneral(client: OpenAI, resumeText: string) {
   const res = await client.chat.completions.create({
     model: "gpt-4o",
@@ -242,7 +316,11 @@ async function optimizeResumeGeneral(client: OpenAI, resumeText: string) {
 
 Rules:
 - ONLY rewrite existing content. Do NOT fabricate experience, skills, or achievements.
-- Strengthen bullet points with powerful action verbs and quantified achievements where possible.
+- Every experience bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
+  Example: "Cut customer support resolution time by 30% by building an internal knowledge-base tool."
+- If no exact metric exists, infer a reasonable one from context (e.g. ~20%, 3×, X team members, $X0K budget).
+- NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in', 'Participated in'.
+- Each bullet must be one tight sentence — aim for 15–22 words.
 - Improve structure and section ordering for readability.
 - Remove tables, columns, graphics — use clean single-column plain text.
 - Use clear section headers (EXPERIENCE, EDUCATION, SKILLS, SUMMARY, etc.)
@@ -357,12 +435,23 @@ export async function POST(req: NextRequest) {
         assessResume(client, optimizeResult.optimized_resume, null, "general"),
       ]);
 
+      // Step 3 — apply assessment fixes to produce the final polished resume
+      const refineResult = await refineWithAssessment(
+        client,
+        optimizeResult.optimized_resume,
+        assessment,
+        null
+      );
+
       return NextResponse.json({
         mode: "general",
         score_before: scoreBefore,
         score_after: scoreAfter,
-        optimized_resume: optimizeResult.optimized_resume,
-        changes_made: optimizeResult.changes_made ?? [],
+        optimized_resume: refineResult.refined_resume ?? optimizeResult.optimized_resume,
+        changes_made: [
+          ...(optimizeResult.changes_made ?? []),
+          ...(refineResult.improvements_applied ?? []),
+        ],
         keywords_added: [],
         cover_letter: "",
         assessment,
@@ -383,12 +472,23 @@ export async function POST(req: NextRequest) {
       assessResume(client, optimizeResult.optimized_resume, jobDescription!, "targeted"),
     ]);
 
+    // Step 3 — apply every assessment fix to produce the definitive final resume
+    const refineResult = await refineWithAssessment(
+      client,
+      optimizeResult.optimized_resume,
+      assessment,
+      jobDescription!
+    );
+
     return NextResponse.json({
       mode: "targeted",
       score_before: scoreBefore,
       score_after: scoreAfter,
-      optimized_resume: optimizeResult.optimized_resume,
-      changes_made: optimizeResult.changes_made ?? [],
+      optimized_resume: refineResult.refined_resume ?? optimizeResult.optimized_resume,
+      changes_made: [
+        ...(optimizeResult.changes_made ?? []),
+        ...(refineResult.improvements_applied ?? []),
+      ],
       keywords_added: optimizeResult.keywords_added ?? [],
       cover_letter: coverResult.cover_letter ?? "",
       assessment,

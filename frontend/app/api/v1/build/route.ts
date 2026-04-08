@@ -109,7 +109,12 @@ Rules:
 - Use ONLY the information provided in the answers. Do NOT fabricate anything.
 - Write in clean single-column plain text — no tables, no columns, no graphics.
 - Use clear section headers: CONTACT, SUMMARY, EXPERIENCE, EDUCATION, SKILLS
-- Under EXPERIENCE, for each role write 3–5 strong bullet points using action verbs + quantified impact.
+- Under EXPERIENCE, for each role write 3–5 bullet points.
+  Every bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
+  Example: "Increased e-commerce conversion rate by 18% by redesigning the checkout flow."
+  If the candidate's answer lacks a metric, infer a credible one from the role context.
+- NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in', 'Participated in'.
+- Each bullet must be one tight, punchy sentence — aim for 15–22 words.
 - The SUMMARY should be 2–3 sentences tailored to the target role.
 - Naturally incorporate keywords from the job description.
 - Keep dates, titles, companies exactly as provided.
@@ -195,7 +200,16 @@ Return ONLY valid JSON:
   "strengths": ["<specific strength from the resume>", "<specific strength>", "<specific strength>"],
   "critical_gaps": ["<specific gap or mismatch vs the JD>"],
   "quick_wins": ["<one concrete actionable change>", "<change>", "<change>"],
-  "red_flags": ["<recruiter concern>"]
+  "red_flags": ["<recruiter concern>"],
+  "skills_heatmap": [
+    { "skill": "<JD skill name>", "status": "<matched | transferable | gap>" }
+  ],
+  "transferable_bridges": [
+    { "skill": "<skill name>", "bridge": "<one honest sentence mapping existing experience to this requirement>" }
+  ],
+  "gap_roadmap": [
+    { "skill": "<skill name>", "action": "<specific cert / project / course to close this gap — name it explicitly>" }
+  ]
 }
 
 Rules:
@@ -203,6 +217,9 @@ Rules:
 - critical_gaps: 1–4 items. Real gaps only. If none, return [].
 - quick_wins: exactly 3 doable actions the candidate can do right now.
 - red_flags: 0–3 genuine concerns. If none, return [].
+- skills_heatmap: list EVERY skill/tool/technology mentioned in the JD. Status: "matched" = clearly present, "transferable" = not exact but adjacent experience exists, "gap" = genuinely missing.
+- transferable_bridges: ONLY skills with status "transferable". One honest sentence each.
+- gap_roadmap: ONLY skills with status "gap". Name a specific cert, course, or project (e.g. "Complete the Google Project Management cert on Coursera — 6 months part-time").
 
 RESUME:
 ${resumeText}
@@ -215,11 +232,66 @@ ${job_description}`,
         temperature: 0.2,
       });
 
+      const assessment = JSON.parse(assessmentResult.choices[0].message.content!);
+
+      // Step 3 — apply assessment fixes to produce the definitive final resume
+      const quickWins = (assessment.quick_wins as string[])
+        .map((w: string, i: number) => `${i + 1}. ${w}`)
+        .join("\n");
+      const gaps = ((assessment.critical_gaps as string[]) ?? [])
+        .map((g: string) => `- ${g}`)
+        .join("\n");
+
+      const refineResult = await client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: `You are an expert resume writer. This resume has already been professionally written, but a recruiter assessment identified specific improvements. Apply ALL of them to produce the definitive final version.
+
+IMPROVEMENTS TO APPLY:
+${gaps ? `Critical gaps to address:\n${gaps}\n` : ""}
+Quick wins to implement:
+${quickWins}
+
+Rules:
+- Apply EVERY quick win and address EVERY critical gap where possible.
+- Do NOT fabricate experience, companies, dates, or qualifications not in the original.
+- Every experience bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
+  If no exact metric exists, infer a credible one from context.
+- NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in'.
+- Each bullet should be one tight sentence — aim for 15–22 words.
+- Maintain clean single-column ATS formatting: clear section headers, no tables/columns.
+- Keep all dates, job titles, and company names exactly as they are.
+
+Return ONLY valid JSON:
+{
+  "refined_resume": "<full final resume as plain text>",
+  "improvements_applied": ["<specific change made>", "<change>"]
+}
+
+CURRENT RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${job_description}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      });
+
+      const refined = JSON.parse(refineResult.choices[0].message.content!);
+      const finalResume = (refined.refined_resume ?? resumeText)
+        .replace(/\nkeywords_used\s*:[\s\S]*$/i, "")
+        .trim();
+
       return NextResponse.json({
-        resume: resumeText,
+        resume: finalResume,
         keywords_used: cv.keywords_used ?? [],
         score,
-        assessment: JSON.parse(assessmentResult.choices[0].message.content!),
+        assessment,
+        improvements_applied: refined.improvements_applied ?? [],
       });
     }
 

@@ -13,6 +13,21 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+export interface SkillHeatmapItem {
+  skill: string;
+  status: "matched" | "transferable" | "gap";
+}
+
+export interface TransferableBridge {
+  skill: string;
+  bridge: string;
+}
+
+export interface GapRoadmapItem {
+  skill: string;
+  action: string;
+}
+
 export interface AssessmentData {
   shortlist_probability: "Low" | "Fair" | "Good" | "Strong";
   probability_rationale: string;
@@ -20,6 +35,10 @@ export interface AssessmentData {
   critical_gaps: string[];
   quick_wins: string[];
   red_flags: string[];
+  // Gap Analysis (targeted mode only)
+  skills_heatmap?: SkillHeatmapItem[];
+  transferable_bridges?: TransferableBridge[];
+  gap_roadmap?: GapRoadmapItem[];
 }
 
 interface ShortlistAssessmentProps {

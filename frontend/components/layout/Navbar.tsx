@@ -50,7 +50,7 @@ export default function Navbar() {
             <Link
               href="/build"
               className={cn(
-                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold transition-all text-foreground-muted hover:text-foreground hover:border-line-hover",
+                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold transition-all text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 active:bg-primary/10 active:border-primary/40 active:text-primary",
                 pathname === "/build" && "border-primary/40 text-primary bg-primary/5"
               )}
             >
@@ -60,10 +60,10 @@ export default function Navbar() {
             <Link
               href="/optimize"
               className={cn(
-                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all",
+                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all active:scale-95",
                 pathname === "/optimize"
-                  ? "bg-primary text-white shadow-lg shadow-[rgba(108,99,255,0.35)]"
-                  : "bg-primary text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-[rgba(108,99,255,0.35)]"
+                  ? "bg-primary text-white shadow-lg shadow-[rgba(108,99,255,0.35)] active:bg-[#5a52e0]"
+                  : "bg-primary text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-[rgba(108,99,255,0.35)] active:bg-[#5a52e0] active:shadow-none"
               )}
             >
               <Zap className="h-4 w-4" />
@@ -101,7 +101,7 @@ export default function Navbar() {
               href="/build"
               onClick={() => setMenuOpen(false)}
               className={cn(
-                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold w-full justify-center mt-2 text-foreground-muted hover:text-foreground",
+                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold w-full justify-center mt-2 text-foreground-muted hover:text-foreground active:scale-95 active:bg-primary/10 active:border-primary/40 active:text-primary",
                 pathname === "/build" && "border-primary/40 text-primary bg-primary/5"
               )}
             >
@@ -111,7 +111,7 @@ export default function Navbar() {
             <Link
               href="/optimize"
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white w-full justify-center mt-2"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white w-full justify-center mt-2 active:scale-95 active:bg-[#5a52e0] transition-all"
             >
               <Zap className="h-4 w-4" />
               Optimize Resume

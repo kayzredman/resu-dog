@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import ScoreCard from "@/components/optimizer/ScoreCard";
 import ResultsPanel from "@/components/optimizer/ResultsPanel";
 import ShortlistAssessment from "@/components/optimizer/ShortlistAssessment";
+import GapAnalysis from "@/components/optimizer/GapAnalysis";
 import type { AssessmentData } from "@/components/optimizer/ShortlistAssessment";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -262,7 +263,10 @@ export default function BuildPage() {
     : false;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className={cn(
+      "mx-auto px-4 py-10 sm:px-6 lg:px-8 transition-all duration-500",
+      wizardStep === 3 && buildResult ? "max-w-screen-xl" : "max-w-3xl"
+    )}>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold tracking-tight">CV Builder</h1>
@@ -313,7 +317,7 @@ export default function BuildPage() {
               <button
                 onClick={handleAnalyze}
                 disabled={jobDescription.trim().length < 50 || analyzing}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {analyzing ? (
                   <>
@@ -407,7 +411,7 @@ export default function BuildPage() {
               <button
                 onClick={() => setWizardStep(2)}
                 disabled={!requiredAnswered}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-dark active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Review answers
                 <ChevronRight className="h-4 w-4" />
@@ -461,7 +465,7 @@ export default function BuildPage() {
               <button
                 onClick={handleBuild}
                 disabled={building}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {building ? (
                   <>
@@ -518,7 +522,7 @@ export default function BuildPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="space-y-5"
+            className="space-y-6"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -542,18 +546,29 @@ export default function BuildPage() {
               </button>
             </div>
 
-            <ScoreCard
-              before={{ overall_score: 0, summary: "", keyword_coverage: 0, skills_alignment: 0, formatting_compliance: 0, matched_keywords: [], missing_keywords: [] }}
-              after={buildResult.score}
-              mode="targeted"
-              isLocked={false}
-              hideBeforeAfter
-            />
+            {/* Score + Assessment side by side on wide screens */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <ScoreCard
+                before={{ overall_score: 0, summary: "", keyword_coverage: 0, skills_alignment: 0, formatting_compliance: 0, matched_keywords: [], missing_keywords: [] }}
+                after={buildResult.score}
+                mode="targeted"
+                isLocked={false}
+                hideBeforeAfter
+              />
 
-            {buildResult.assessment && (
-              <ShortlistAssessment assessment={buildResult.assessment} />
-            )}
+              {buildResult.assessment && (
+                <ShortlistAssessment assessment={buildResult.assessment} />
+              )}
+              {buildResult.assessment?.skills_heatmap?.length ? (
+                <GapAnalysis
+                  skillsHeatmap={buildResult.assessment.skills_heatmap}
+                  transferableBridges={buildResult.assessment.transferable_bridges ?? []}
+                  gapRoadmap={buildResult.assessment.gap_roadmap ?? []}
+                />
+              ) : null}
+            </div>
 
+            {/* Optimized resume — full width */}
             <ResultsPanel
               optimizedResume={buildResult.resume}
               coverLetter=""

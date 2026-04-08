@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 
 interface ResultsPanelProps {
   optimizedResume: string;
@@ -217,6 +217,10 @@ export default function ResultsPanel({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <h3 className="font-semibold">Optimized Resume</h3>
+              <span className="flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#22c55e]">
+                <ShieldCheck className="h-3 w-3" />
+                Assessment refined
+              </span>
             </div>
             <div className="flex items-center gap-2">
               {isPaid && <CopyButton text={optimizedResume} />}
