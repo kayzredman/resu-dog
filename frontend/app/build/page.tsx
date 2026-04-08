@@ -17,6 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import ScoreCard from "@/components/optimizer/ScoreCard";
 import ResultsPanel from "@/components/optimizer/ResultsPanel";
+import ShortlistAssessment from "@/components/optimizer/ShortlistAssessment";
+import type { AssessmentData } from "@/components/optimizer/ShortlistAssessment";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,6 +52,7 @@ interface BuildResult {
   resume: string;
   keywords_used: string[];
   score: ScoreData;
+  assessment?: AssessmentData;
 }
 
 // ─── Step constants ───────────────────────────────────────────────────────────
@@ -112,6 +115,29 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
       </span>
     </div>
   );
+}
+
+// ─── Factual fields — AI Assist not useful here ───────────────────────────────
+
+const FACTUAL_PATTERNS = [
+  /\bname\b/i,
+  /\baddress\b/i,
+  /\blocation\b/i,
+  /\bcity\b/i,
+  /\bcountry\b/i,
+  /\bphone\b/i,
+  /\bmobile\b/i,
+  /\bemail\b/i,
+  /\blinkedin\b/i,
+  /\bgraduat(ion|ed)\s*year\b/i,
+  /\byear\s*(of\s*)?graduation\b/i,
+  /\bwhen\s*did\s*you\s*graduate\b/i,
+  /\bdate\s*of\s*birth\b/i,
+  /\bnationality\b/i,
+];
+
+function isFactualField(q: Question): boolean {
+  return FACTUAL_PATTERNS.some((re) => re.test(q.question) || re.test(q.placeholder));
 }
 
 // ─── Section grouping ─────────────────────────────────────────────────────────
@@ -350,6 +376,7 @@ export default function BuildPage() {
                       className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                     />
                     <div className="flex justify-end">
+                      {!isFactualField(q) && (
                       <button
                         type="button"
                         onClick={() => handleAssist(q)}
@@ -362,6 +389,7 @@ export default function BuildPage() {
                           <><Sparkles className="h-3 w-3" />{answers[q.id] ? "Rewrite with AI" : "Help me write this"}</>
                         )}
                       </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -521,6 +549,10 @@ export default function BuildPage() {
               isLocked={false}
               hideBeforeAfter
             />
+
+            {buildResult.assessment && (
+              <ShortlistAssessment assessment={buildResult.assessment} />
+            )}
 
             <ResultsPanel
               optimizedResume={buildResult.resume}

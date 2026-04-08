@@ -178,10 +178,48 @@ ${answersText}`,
         .replace(/\nkeywords_used\s*:[\s\S]*$/i, "")
         .trim();
 
+      // Run assessment against the built CV + JD
+      const assessmentResult = await client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: `You are a brutally honest senior recruiter with 15+ years of experience. Assess this candidate's resume against the job description and give a frank, constructive shortlist assessment.
+
+Be specific. Reference actual content from the resume. Do NOT give generic advice.
+
+Return ONLY valid JSON:
+{
+  "shortlist_probability": "<Low | Fair | Good | Strong>",
+  "probability_rationale": "<one sentence explaining the verdict>",
+  "strengths": ["<specific strength from the resume>", "<specific strength>", "<specific strength>"],
+  "critical_gaps": ["<specific gap or mismatch vs the JD>"],
+  "quick_wins": ["<one concrete actionable change>", "<change>", "<change>"],
+  "red_flags": ["<recruiter concern>"]
+}
+
+Rules:
+- strengths: 2–4 items. Quote or reference specific content.
+- critical_gaps: 1–4 items. Real gaps only. If none, return [].
+- quick_wins: exactly 3 doable actions the candidate can do right now.
+- red_flags: 0–3 genuine concerns. If none, return [].
+
+RESUME:
+${resumeText}
+
+JOB DESCRIPTION:
+${job_description}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+      });
+
       return NextResponse.json({
         resume: resumeText,
         keywords_used: cv.keywords_used ?? [],
         score,
+        assessment: JSON.parse(assessmentResult.choices[0].message.content!),
       });
     }
 

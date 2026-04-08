@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import DropZone from "@/components/optimizer/DropZone";
 import ScoreCard from "@/components/optimizer/ScoreCard";
 import ResultsPanel from "@/components/optimizer/ResultsPanel";
+import ShortlistAssessment from "@/components/optimizer/ShortlistAssessment";
+import type { AssessmentData } from "@/components/optimizer/ShortlistAssessment";
 
 interface ScoreData {
   overall_score: number;
@@ -32,6 +34,7 @@ interface OptimizeResult {
   changes_made: string[];
   keywords_added: string[];
   cover_letter: string;
+  assessment?: AssessmentData;
 }
 
 type Step = "idle" | "loading" | "done" | "error";
@@ -296,6 +299,9 @@ export default function OptimizePage() {
                   mode={result.mode}
                   isLocked={false}
                 />
+                {result.assessment && (
+                  <ShortlistAssessment assessment={result.assessment} />
+                )}
                 <ResultsPanel
                   optimizedResume={result.optimized_resume}
                   coverLetter={result.cover_letter}
