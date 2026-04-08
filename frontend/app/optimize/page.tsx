@@ -328,6 +328,7 @@ export default function OptimizePage() {
                   keywordsAdded={result.keywords_added}
                   mode={result.mode}
                   isPaid={true}
+                  atsScore={result.score_after?.overall_score}
                 />
               </motion.div>
             )}

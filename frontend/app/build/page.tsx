@@ -577,6 +577,7 @@ export default function BuildPage() {
               mode="targeted"
               isPaid={true}
               hideCoverLetter
+              atsScore={buildResult.score?.overall_score}
             />
           </motion.div>
         )}

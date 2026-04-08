@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
+import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ResultsPanelProps {
   optimizedResume: string;
@@ -12,6 +13,7 @@ interface ResultsPanelProps {
   isPaid: boolean;
   mode?: "targeted" | "general";
   hideCoverLetter?: boolean;
+  atsScore?: number;
 }
 
 // Known section headers for detection
@@ -186,10 +188,64 @@ export default function ResultsPanel({
   isPaid,
   mode = "targeted",
   hideCoverLetter = false,
+  atsScore,
 }: ResultsPanelProps) {
+  const router = useRouter();
   const [showChanges, setShowChanges] = useState(false);
   const [downloadingResume, setDownloadingResume] = useState(false);
   const [downloadingCover, setDownloadingCover] = useState(false);
+  const [creatingProfile, setCreatingProfile] = useState(false);
+  const [exportFormat, setExportFormat] = useState<string | null>(null);
+  const [exportResult, setExportResult] = useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleCreateProfile = async () => {
+    if (!optimizedResume) return;
+    setCreatingProfile(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+      const res = await fetch(`${apiBase}/api/v1/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume: optimizedResume }),
+      });
+      if (!res.ok) return;
+      const profile = await res.json();
+      if (atsScore) profile.ats_score = atsScore;
+      localStorage.setItem("resudog_profile", JSON.stringify(profile));
+      localStorage.setItem("resudog_resume", optimizedResume);
+      router.push("/p/preview");
+    } finally {
+      setCreatingProfile(false);
+    }
+  };
+
+  const EXPORT_FORMATS = [
+    { key: "linkedin", label: "LinkedIn Profile Format", flag: "🔗" },
+    { key: "wes", label: "WES / Immigration CV", flag: "🍁" },
+    { key: "uk", label: "UK / EU CV Format", flag: "🇬🇧" },
+  ];
+
+  const handleExport = async (format: string) => {
+    setShowExportMenu(false);
+    setExportFormat(format);
+    setExportResult(null);
+    setExportLoading(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+      const res = await fetch(`${apiBase}/api/v1/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resume: optimizedResume, format }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setExportResult(data.formatted ?? data.about ?? JSON.stringify(data, null, 2));
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const handleResumeDownload = async () => {
     setDownloadingResume(true);
@@ -213,8 +269,9 @@ export default function ResultsPanel({
       >
         {!isPaid && <LockedOverlay message="Sign up to download your optimized resume" />}
         <div className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+          {/* Header row */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 flex-wrap">
               <Sparkles className="h-4 w-4 text-primary" />
               <h3 className="font-semibold">Optimized Resume</h3>
               <span className="flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#22c55e]">
@@ -222,12 +279,48 @@ export default function ResultsPanel({
                 Assessment refined
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Create Profile */}
+              <button
+                onClick={handleCreateProfile}
+                disabled={creatingProfile}
+                className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {creatingProfile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <User className="h-3.5 w-3.5" />}
+                {creatingProfile ? "Building…" : "Create Profile Page"}
+              </button>
+
+              {/* Export As dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  Export As
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 top-full mt-1 z-20 w-52 rounded-xl border border-line bg-surface shadow-lg overflow-hidden">
+                    {EXPORT_FORMATS.map((f) => (
+                      <button
+                        key={f.key}
+                        onClick={() => handleExport(f.key)}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-foreground-muted hover:bg-foreground/[0.05] hover:text-foreground transition-colors text-left"
+                      >
+                        <span>{f.flag}</span>
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {isPaid && <CopyButton text={optimizedResume} />}
               <button
                 disabled={!isPaid || downloadingResume}
                 onClick={handleResumeDownload}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark active:scale-95 active:bg-[#5a52e0] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileDown className="h-3.5 w-3.5" />
                 {downloadingResume ? "Generating…" : "Download PDF"}
@@ -242,6 +335,47 @@ export default function ResultsPanel({
           </div>
         </div>
       </motion.div>
+
+      {/* Export Result panel */}
+      {(exportLoading || exportResult) && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-line bg-surface overflow-hidden"
+        >
+          <div className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-primary" />
+                <h3 className="font-semibold text-sm">
+                  {EXPORT_FORMATS.find((f) => f.key === exportFormat)?.label ?? "Export"}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {exportResult && <CopyButton text={exportResult} />}
+                <button
+                  onClick={() => { setExportResult(null); setExportFormat(null); }}
+                  className="text-xs text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            {exportLoading ? (
+              <div className="flex items-center gap-2 text-sm text-foreground-muted py-4">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Reformatting for {EXPORT_FORMATS.find((f) => f.key === exportFormat)?.label}…
+              </div>
+            ) : (
+              <div className="rounded-xl bg-background p-4 max-h-[360px] overflow-y-auto">
+                <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
+                  {exportResult}
+                </pre>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Changes Made */}
       {changesMade.length > 0 && (
