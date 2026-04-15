@@ -9,7 +9,7 @@ frontend/out/
 frontend/build/
 
 # Python
-backend/__pycache__/
+**/__pycache__/
 backend/*.pyc
 backend/*.pyo
 backend/*.pyd
