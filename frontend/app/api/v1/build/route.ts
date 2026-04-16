@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
       if (!job_description) {
         return NextResponse.json({ detail: "Missing job_description." }, { status: 400 });
       }
+      if (job_description.length > 15_000) {
+        return NextResponse.json({ detail: "Job description too long. Maximum is 15,000 characters." }, { status: 400 });
+      }
 
       const res = await client.chat.completions.create({
         model: "gpt-4o",

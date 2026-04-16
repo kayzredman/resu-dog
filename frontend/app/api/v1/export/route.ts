@@ -82,6 +82,9 @@ export async function POST(req: NextRequest) {
     if (!resume?.trim()) {
       return NextResponse.json({ detail: "Missing resume text." }, { status: 400 });
     }
+    if (resume.length > 50_000) {
+      return NextResponse.json({ detail: "Resume text too long. Maximum is 50,000 characters." }, { status: 400 });
+    }
     if (!FORMAT_PROMPTS[format]) {
       return NextResponse.json({ detail: `Unknown format: ${format}` }, { status: 400 });
     }

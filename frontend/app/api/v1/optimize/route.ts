@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
 
+// ─── Limits ───────────────────────────────────────────────────────────────────
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_RESUME_CHARS = 50_000;
+const MAX_JD_CHARS = 15_000;
+const ALLOWED_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+]);
+
 // ─── File text extraction ─────────────────────────────────────────────────────
 
 async function extractText(file: File): Promise<string> {
@@ -406,9 +416,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!ALLOWED_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { detail: "Unsupported file type. Please upload a PDF, DOCX, or TXT file." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { detail: "File too large. Maximum size is 10 MB." },
+        { status: 400 }
+      );
+    }
+
     if (mode === "targeted" && !jobDescription) {
       return NextResponse.json(
         { detail: "Missing job_description for targeted mode." },
+        { status: 400 }
+      );
+    }
+
+    if (jobDescription && jobDescription.length > MAX_JD_CHARS) {
+      return NextResponse.json(
+        { detail: `Job description too long. Maximum is ${MAX_JD_CHARS.toLocaleString()} characters.` },
         { status: 400 }
       );
     }
@@ -419,6 +450,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { detail: "Could not extract enough text from the uploaded file." },
         { status: 422 }
+      );
+    }
+
+    if (resumeText.length > MAX_RESUME_CHARS) {
+      return NextResponse.json(
+        { detail: `Resume text too long (${resumeText.length.toLocaleString()} chars). Maximum is ${MAX_RESUME_CHARS.toLocaleString()}.` },
+        { status: 400 }
       );
     }
 
