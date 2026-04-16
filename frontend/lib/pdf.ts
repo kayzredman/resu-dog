@@ -67,8 +67,8 @@ export async function downloadPDF(filename: string, content: string) {
       doc.text(trimmed, ML, y);
       y += 1.5;
 
-      doc.setDrawColor(108, 99, 255);
-      doc.setLineWidth(0.5);
+      doc.setDrawColor(80, 80, 80);
+      doc.setLineWidth(0.4);
       doc.line(ML, y, pageW - MR, y);
       y += 5;
 
@@ -76,17 +76,17 @@ export async function downloadPDF(filename: string, content: string) {
     } else if (!firstNameDone && !trimmed.includes("@") && !trimmed.startsWith("+") && !trimmed.startsWith("http") && trimmed.length < 50) {
       ensureSpace(8);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
+      doc.setFontSize(18);
       doc.setTextColor(20, 20, 20);
       doc.text(trimmed, ML, y);
-      y += 7;
+      y += 8;
       firstNameDone = true;
     } else if (/^[-•]/.test(trimmed)) {
       const bulletContent = trimmed.replace(/^[-•]\s*/, "");
       ensureSpace(6);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(55, 55, 55);
+      doc.setFontSize(10);
+      doc.setTextColor(33, 33, 33);
       doc.text("•", ML + 1, y);
       const wrapped = doc.splitTextToSize(bulletContent, textW - 7) as string[];
       for (const wl of wrapped) {
@@ -98,15 +98,15 @@ export async function downloadPDF(filename: string, content: string) {
       if (y > MT + 5) y += 3;
       ensureSpace(8);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(9.5);
-      doc.setTextColor(40, 40, 40);
+      doc.setFontSize(10);
+      doc.setTextColor(33, 33, 33);
       const wrapped = doc.splitTextToSize(trimmed, textW) as string[];
       for (const wl of wrapped) { ensureSpace(5); doc.text(wl, ML, y); y += 5; }
     } else {
       ensureSpace(5);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(65, 65, 65);
+      doc.setFontSize(10);
+      doc.setTextColor(33, 33, 33);
       const wrapped = doc.splitTextToSize(trimmed, textW) as string[];
       for (const wl of wrapped) { ensureSpace(5); doc.text(wl, ML, y); y += 4.8; }
     }

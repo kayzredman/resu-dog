@@ -63,10 +63,10 @@ export async function downloadDOCX(filename: string, content: string) {
           heading: HeadingLevel.HEADING_2,
           spacing: { before: 240, after: 80 },
           border: {
-            bottom: { style: BorderStyle.SINGLE, size: 1, color: "6c63ff" },
+            bottom: { style: BorderStyle.SINGLE, size: 1, color: "505050" },
           },
           children: [
-            new TextRun({ text: trimmed, bold: true, size: 22, color: "1e1e1e" }),
+            new TextRun({ text: trimmed, bold: true, size: 22, font: "Calibri", color: "1e1e1e" }),
           ],
         })
       );
@@ -77,7 +77,7 @@ export async function downloadDOCX(filename: string, content: string) {
           alignment: AlignmentType.LEFT,
           spacing: { after: 100 },
           children: [
-            new TextRun({ text: trimmed, bold: true, size: 28, color: "141414" }),
+            new TextRun({ text: trimmed, bold: true, size: 36, font: "Calibri", color: "141414" }),
           ],
         })
       );
@@ -89,7 +89,7 @@ export async function downloadDOCX(filename: string, content: string) {
           bullet: { level: 0 },
           spacing: { after: 40 },
           children: [
-            new TextRun({ text: bulletContent, size: 19, color: "373737" }),
+            new TextRun({ text: bulletContent, size: 20, font: "Calibri", color: "212121" }),
           ],
         })
       );
@@ -98,7 +98,7 @@ export async function downloadDOCX(filename: string, content: string) {
         new Paragraph({
           spacing: { before: 160, after: 40 },
           children: [
-            new TextRun({ text: trimmed, bold: true, size: 19, color: "282828" }),
+            new TextRun({ text: trimmed, bold: true, size: 20, font: "Calibri", color: "212121" }),
           ],
         })
       );
@@ -107,7 +107,7 @@ export async function downloadDOCX(filename: string, content: string) {
         new Paragraph({
           spacing: { after: 40 },
           children: [
-            new TextRun({ text: trimmed, size: 19, color: "414141" }),
+            new TextRun({ text: trimmed, size: 20, font: "Calibri", color: "212121" }),
           ],
         })
       );
@@ -119,7 +119,7 @@ export async function downloadDOCX(filename: string, content: string) {
       {
         properties: {
           page: {
-            margin: { top: 720, right: 720, bottom: 720, left: 720 },
+            margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 },
           },
         },
         children,

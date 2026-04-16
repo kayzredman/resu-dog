@@ -236,11 +236,12 @@ async function generateCoverLetter(
 Write a compelling, personalized cover letter based on the candidate's experience and the JD.
 
 Rules:
+- Begin with "Dear Hiring Manager," as the salutation (industry standard — recruiters expect it).
 - Write in first person, professional but engaging tone.
 - Connect specific experiences from the resume to specific requirements in the JD.
 - Do NOT use generic filler phrases like "I am a hard worker" or "team player".
 - 3-4 paragraphs maximum.
-- No "Dear Hiring Manager" — use a strong opening hook instead.
+- End with a professional sign-off: "Sincerely," followed by the candidate's full name on the next line.
 
 Return ONLY valid JSON: { "cover_letter": "<full cover letter text>" }
 
