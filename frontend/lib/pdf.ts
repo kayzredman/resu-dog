@@ -57,7 +57,17 @@ export async function downloadPDF(filename: string, content: string) {
       continue;
     }
 
-    if (isSectionHeader(trimmed)) {
+    // Name detection FIRST — before section header check
+    // Catches all-caps names like "JOHN SMITH" that would otherwise match isSectionHeader
+    if (!firstNameDone && !RESUME_SECTIONS.has(trimmed.toUpperCase()) && !trimmed.includes("@") && !trimmed.startsWith("+") && !trimmed.startsWith("http") && trimmed.length < 50 && !/^[-•\d]/.test(trimmed)) {
+      ensureSpace(8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(20, 20, 20);
+      doc.text(trimmed, ML, y);
+      y += 8;
+      firstNameDone = true;
+    } else if (isSectionHeader(trimmed)) {
       if (y > MT + 5) y += 5;
       ensureSpace(12);
 
@@ -72,15 +82,7 @@ export async function downloadPDF(filename: string, content: string) {
       doc.line(ML, y, pageW - MR, y);
       y += 5;
 
-      if (trimmed === "CONTACT") firstNameDone = false;
-    } else if (!firstNameDone && !trimmed.includes("@") && !trimmed.startsWith("+") && !trimmed.startsWith("http") && trimmed.length < 50) {
-      ensureSpace(8);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.setTextColor(20, 20, 20);
-      doc.text(trimmed, ML, y);
-      y += 8;
-      firstNameDone = true;
+      if (trimmed === "CONTACT") firstNameDone = true;
     } else if (/^[-•]/.test(trimmed)) {
       const bulletContent = trimmed.replace(/^[-•]\s*/, "");
       ensureSpace(6);
@@ -91,7 +93,7 @@ export async function downloadPDF(filename: string, content: string) {
       const wrapped = doc.splitTextToSize(bulletContent, textW - 7) as string[];
       for (const wl of wrapped) {
         ensureSpace(5);
-        doc.text(wl, ML + 6, y);
+        doc.text(wl, ML + 6, y, { align: "justify", maxWidth: textW - 7 });
         y += 4.8;
       }
     } else if (isRoleLine(trimmed)) {
@@ -108,7 +110,7 @@ export async function downloadPDF(filename: string, content: string) {
       doc.setFontSize(10);
       doc.setTextColor(33, 33, 33);
       const wrapped = doc.splitTextToSize(trimmed, textW) as string[];
-      for (const wl of wrapped) { ensureSpace(5); doc.text(wl, ML, y); y += 4.8; }
+      for (const wl of wrapped) { ensureSpace(5); doc.text(wl, ML, y, { align: "justify", maxWidth: textW }); y += 4.8; }
     }
   }
 

@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { getRedis, profileKey } from "@/lib/redis";
 import PublicProfileClient from "./client";
 
+export const dynamic = "force-dynamic";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface StoredProfile {

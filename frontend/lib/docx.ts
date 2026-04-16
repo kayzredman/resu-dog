@@ -56,7 +56,20 @@ export async function downloadDOCX(filename: string, content: string) {
       continue;
     }
 
-    if (isSectionHeader(trimmed)) {
+    // Name detection FIRST — catches all-caps names like "JOHN SMITH"
+    if (!firstNameDone && !RESUME_SECTIONS.has(trimmed.toUpperCase()) && !trimmed.includes("@") && !trimmed.startsWith("+") && !trimmed.startsWith("http") && trimmed.length < 50 && !/^[-•\d]/.test(trimmed)) {
+      children.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.LEFT,
+          spacing: { after: 100 },
+          children: [
+            new TextRun({ text: trimmed, bold: true, size: 36, font: "Calibri", color: "141414" }),
+          ],
+        })
+      );
+      firstNameDone = true;
+    } else if (isSectionHeader(trimmed)) {
       firstNameDone = true;
       children.push(
         new Paragraph({
@@ -70,23 +83,12 @@ export async function downloadDOCX(filename: string, content: string) {
           ],
         })
       );
-    } else if (!firstNameDone && !trimmed.includes("@") && !trimmed.startsWith("+") && !trimmed.startsWith("http") && trimmed.length < 50) {
-      children.push(
-        new Paragraph({
-          heading: HeadingLevel.HEADING_1,
-          alignment: AlignmentType.LEFT,
-          spacing: { after: 100 },
-          children: [
-            new TextRun({ text: trimmed, bold: true, size: 36, font: "Calibri", color: "141414" }),
-          ],
-        })
-      );
-      firstNameDone = true;
     } else if (/^[-•]/.test(trimmed)) {
       const bulletContent = trimmed.replace(/^[-•]\s*/, "");
       children.push(
         new Paragraph({
           bullet: { level: 0 },
+          alignment: AlignmentType.JUSTIFIED,
           spacing: { after: 40 },
           children: [
             new TextRun({ text: bulletContent, size: 20, font: "Calibri", color: "212121" }),
@@ -105,6 +107,7 @@ export async function downloadDOCX(filename: string, content: string) {
     } else {
       children.push(
         new Paragraph({
+          alignment: AlignmentType.JUSTIFIED,
           spacing: { after: 40 },
           children: [
             new TextRun({ text: trimmed, size: 20, font: "Calibri", color: "212121" }),

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2, FileText } from "lucide-react";
+import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2, FileText, PenLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { downloadPDF } from "@/lib/pdf";
@@ -80,7 +80,15 @@ export default function ResultsPanel({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedResume, setEditedResume] = useState(optimizedResume);
   const exportRef = useRef<HTMLDivElement>(null);
+
+  // Sync if parent passes new optimizedResume
+  useEffect(() => {
+    setEditedResume(optimizedResume);
+    setIsEditing(false);
+  }, [optimizedResume]);
 
   useEffect(() => {
     if (!showExportMenu) return;
@@ -94,14 +102,14 @@ export default function ResultsPanel({
   }, [showExportMenu]);
 
   const handleCreateProfile = async () => {
-    if (!optimizedResume) return;
+    if (!editedResume) return;
     setCreatingProfile(true);
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
       const res = await fetch(`${apiBase}/api/v1/profile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: optimizedResume }),
+        body: JSON.stringify({ resume: editedResume }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -111,7 +119,7 @@ export default function ResultsPanel({
       const profile = await res.json();
       if (atsScore) profile.ats_score = atsScore;
       localStorage.setItem("resudog_profile", JSON.stringify(profile));
-      localStorage.setItem("resudog_resume", optimizedResume);
+      localStorage.setItem("resudog_resume", editedResume);
       router.push("/p/preview");
     } finally {
       setCreatingProfile(false);
@@ -134,7 +142,7 @@ export default function ResultsPanel({
       const res = await fetch(`${apiBase}/api/v1/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: optimizedResume, format }),
+        body: JSON.stringify({ resume: editedResume, format }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -150,13 +158,13 @@ export default function ResultsPanel({
 
   const handleResumeDownload = async () => {
     setDownloadingResume(true);
-    await downloadPDF("optimized-resume.pdf", optimizedResume);
+    await downloadPDF("optimized-resume.pdf", editedResume);
     setDownloadingResume(false);
   };
 
   const handleDocxDownload = async () => {
     setDownloadingDocx(true);
-    await downloadDOCX("optimized-resume.docx", optimizedResume);
+    await downloadDOCX("optimized-resume.docx", editedResume);
     setDownloadingDocx(false);
   };
 
@@ -223,7 +231,20 @@ export default function ResultsPanel({
                 )}
               </div>
 
-              {isPaid && <CopyButton text={optimizedResume} />}
+              {isPaid && <CopyButton text={editedResume} />}
+              {isPaid && (
+                <button
+                  onClick={() => setIsEditing((v) => !v)}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold active:scale-95 transition-all ${
+                    isEditing
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-line text-foreground-muted hover:text-foreground hover:border-line-hover"
+                  }`}
+                >
+                  <PenLine className="h-3.5 w-3.5" />
+                  {isEditing ? "Done editing" : "Edit"}
+                </button>
+              )}
               <button
                 disabled={!isPaid || downloadingDocx}
                 onClick={handleDocxDownload}
@@ -244,10 +265,23 @@ export default function ResultsPanel({
           </div>
 
           <div className="rounded-xl bg-background p-4 max-h-80 overflow-y-auto">
-            <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
-              {optimizedResume}
-            </pre>
+            {isEditing ? (
+              <textarea
+                value={editedResume}
+                onChange={(e) => setEditedResume(e.target.value)}
+                className="w-full min-h-72 resize-y bg-transparent text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed focus:outline-none"
+              />
+            ) : (
+              <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
+                {editedResume}
+              </pre>
+            )}
           </div>
+          {isEditing && (
+            <p className="text-[10px] text-foreground-dim mt-2 px-1">
+              Edit your resume text above — your changes will be used for PDF, DOCX, and exports.
+            </p>
+          )}
         </div>
       </motion.div>
 
