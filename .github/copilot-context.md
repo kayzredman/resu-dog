@@ -12,6 +12,8 @@
 - **AI**: OpenAI GPT-4o, JSON mode, called via Next.js Route Handlers (no separate backend in use)
 - **File parsing**: mammoth (DOCX), pdf-parse@1.1.1 (PDF), TXT native
 - **PDF generation**: jsPDF@4.x, dynamic import client-side
+- **DOCX generation**: docx + file-saver
+- **Shareable profiles**: Upstash Redis (@upstash/redis), nanoid for slug generation
 - **Backend scaffold**: FastAPI (Python) exists at `backend/` but no Python on dev machine — not running
 
 ## Theme
@@ -25,16 +27,22 @@
 - `frontend/app/api/v1/build/route.ts` — CV builder pipeline (analyze / write / assist actions)
 - `frontend/app/api/v1/profile/route.ts` — `POST { resume }` → GPT-4o (temp 0.1) → ProfileData JSON
 - `frontend/app/api/v1/export/route.ts` — `POST { resume, format }` → formatted text; formats: linkedin / wes / uk
+- `frontend/app/api/v1/profile/publish/route.ts` — `POST { profile, resume }` → saves to Upstash Redis, returns `{ slug, url }`
 - `frontend/app/optimize/page.tsx` — optimizer UI; `isPaid=true` for testing; `max-w-screen-xl` grid `[360px_1fr]` when result shown
 - `frontend/app/build/page.tsx` — CV builder wizard (4-step); result step is `max-w-screen-xl`
-- `frontend/app/p/preview/page.tsx` — public profile page (localStorage-backed); reads `resudog_profile` + `resudog_resume`
+- `frontend/app/p/preview/page.tsx` — owner's profile preview (localStorage-backed); uses shared `ProfileView` component + Share button
+- `frontend/app/p/[slug]/page.tsx` — public shareable profile page (server component, fetches from Redis, dynamic OG tags)
+- `frontend/components/profile/ProfileView.tsx` — shared profile rendering component (used by both preview and public pages)
+- `frontend/lib/redis.ts` — Upstash Redis singleton client
+- `frontend/lib/pdf.ts` — shared PDF generation (jsPDF)
+- `frontend/lib/docx.ts` — shared DOCX generation
 - `frontend/components/optimizer/ScoreCard.tsx` — score rings, bars, keyword chips
 - `frontend/components/optimizer/ResultsPanel.tsx` — resume viewer, cover letter, PDF download, Create Profile + Export As
 - `frontend/components/optimizer/ShortlistAssessment.tsx` — expandable recruiter assessment panel; exports `AssessmentData` type
 - `frontend/components/optimizer/GapAnalysis.tsx` — skills heatmap + transferable bridges + gap roadmap (targeted mode only)
 - `frontend/components/landing/` — Hero, HowItWorks, Features, Pricing
 - `frontend/components/layout/` — Navbar, Footer
-- `frontend/.env.local` — OPENAI_API_KEY + NEXT_PUBLIC_API_URL (gitignored — must create on each machine)
+- `frontend/.env.local` — OPENAI_API_KEY + NEXT_PUBLIC_API_URL + KV_REST_API_URL + KV_REST_API_TOKEN (gitignored — must create on each machine)
 
 ## Known Gotchas
 - `pdf-parse@1.1.1` must use `require("pdf-parse/lib/pdf-parse")` — top-level import triggers a self-test looking for `test/data/05-versions-space.pdf`
@@ -71,7 +79,7 @@ interface AssessmentData {
 }
 ```
 
-## ProfileData interface (exported from app/p/preview/page.tsx)
+## ProfileData interface (exported from components/profile/ProfileView.tsx)
 ```ts
 interface ProfileData {
   name: string; title: string; location: string | null; email: string | null;
@@ -88,10 +96,17 @@ interface ProfileData {
 - `resudog_profile` — ProfileData JSON (written by ResultsPanel `handleCreateProfile`)
 - `resudog_resume` — raw optimized resume text (written alongside profile)
 
+## Shareable Profiles
+- **Publish flow**: Preview page → "Share Profile" button → `POST /api/v1/profile/publish` → stores in Upstash Redis with nanoid slug (10 chars) → returns URL like `/p/a1b2c3d4e5`
+- **Public page**: `/p/[slug]` — server component, fetches from Redis, renders `ProfileView` with `isPublic` flag
+- **TTL**: 90 days — profiles auto-expire
+- **OG tags**: Dynamic per-profile (`generateMetadata` in page.tsx) — name, title, summary
+- **Storage**: JSON blob with `profile` + `resume` + `createdAt`, keyed as `profile:{slug}`
+
 ## Export Formats (export/route.ts)
-- `linkedin` — Headline + About + Experience sections, copy-paste ready for LinkedIn
-- `wes` — Canadian immigration CV: full date ranges, reference contacts, formal headers
-- `uk` — UK/EU 2-page CV: Profile Statement, hobbies/interests, "References available on request"
+- `linkedin` — Headline + narrative About + Experience sections + recommendation request templates, copy-paste ready for LinkedIn
+- `wes` — Canadian immigration CV: full date ranges (Month Year – Month Year), GPA/honours, reference contacts, formal headers
+- `uk` — UK/EU 2-page CV: Profile Statement, UK date format (DD Month YYYY), hobbies only if present (never fabricated), "References available on request"
 
 ## ResultsPanel — key behaviours
 - `Create Profile Page` button: calls `/api/v1/profile`, injects `ats_score`, stores to localStorage, opens `/p/preview` in **new tab** (`window.open`)
@@ -131,7 +146,7 @@ All A-items are independent — no blockers between them.
 | B2 | `isPaid` wiring — real subscription check, `LockedOverlay` → checkout, free tier limits | B1 | ⬜ |
 | B3 | Stripe integration — checkout, webhooks, subscription status in Supabase | B1+B2 | ⬜ |
 | B4 | Rate limiting — by user ID or IP, free: 2/day, paid: unlimited | B1 | ⬜ |
-| B5 | Profile persistence — Supabase DB, slug generation, `/p/[slug]`, view counter | B1 | ⬜ |
+| B5 | Profile persistence — ✅ Upstash Redis shareable URLs (`/p/[slug]`), view counter still needed | B1 | 🔨 partial |
 | B6 | Security hardening — rotate API key, CORS prod-only, Vercel env vars, API protection | B1+B3 | ⬜ |
 | B7 | Production infra — custom domain, Sentry, analytics | B6 | ⬜ |
 | B8 | Launch checklist — merge dev→main, CI green, smoke test, Stripe live mode | B1-B7 | ⬜ |

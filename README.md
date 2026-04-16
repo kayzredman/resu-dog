@@ -51,7 +51,7 @@ Most people lose jobs before a human ever reads their resume. ATS systems filter
 ### 6. Matching Cover Letter *(targeted mode only)*
 - Personalized — not a template
 - Connects specific candidate experience to specific role requirements
-- Strong opening hook — no "Dear Hiring Manager"
+- Professional "Dear Hiring Manager," salutation + sign-off with candidate's name
 - Download/copy (paid tier)
 
 ---
@@ -93,20 +93,22 @@ Most people lose jobs before a human ever reads their resume. ATS systems filter
 
 ---
 
-### 🔨 Phase 3 — Public Profile Page (`/p/preview` → `/p/[slug]`)
+### ✅ Phase 3 — Public Profile Page + Shareable Links (shipped)
 
 **Flow:**
 1. User completes optimize or build → sees results as normal
 2. "Create Profile Page →" button appears in ResultsPanel header
 3. One GPT call parses the optimized resume into structured profile JSON
 4. Stored in `localStorage` → user redirected to `/p/preview`
-5. When auth ships, `/p/preview` becomes a real shareable `/p/john-doe`
+5. **"Share Profile" button** publishes to Upstash Redis → generates shareable URL like `/p/a1b2c3d4e5`
+6. Public visitors see the full profile with dynamic OG meta tags, Hire Me CTA, Download CV, and "Built with resu-dog.com" footer
+7. Shared profiles auto-expire after 90 days
 
 **Page layout (Udemy-inspired, two-column):**
 ```
 Hero: Avatar (initials) · Name · Title · Location · Open to Work badge · ATS score
 Main (scrolls): What I bring · Experience timeline · Education · Skills pill grid
-Sidebar (sticky): Stats · Hire Me CTA · Download CV · LinkedIn · "Made with resu-dog"
+Sidebar (sticky): Stats · Hire Me CTA · Share/Copy Link · Download CV · LinkedIn · "Made with resu-dog"
 ```
 
 **Animations (Framer Motion):**
@@ -119,19 +121,19 @@ Sidebar (sticky): Stats · Hire Me CTA · Download CV · LinkedIn · "Made with 
 
 | Format | What changes |
 |---|---|
-| **ATS PDF** (current) | Clean plain text, ATS-parsed |
-| **LinkedIn Profile** | Splits into Headline, About, Experience entries, Skills — copy-pasteable sections |
-| **WES / Immigration CV** | Credential equivalency framing, Canadian format, DOB/nationality fields included |
-| **UK / EU CV** | 2-page norm, hobbies, "references available", avoids US conventions |
+| **ATS PDF** (current) | Clean plain text, ATS-parsed — 10pt body, 18pt name, neutral grey dividers |
+| **ATS DOCX** | Calibri font, 0.75in margins, industry-standard formatting |
+| **LinkedIn Profile** | Splits into Headline, narrative About, Experience, Skills, recommendation request templates |
+| **WES / Immigration CV** | Credential equivalency framing, Canadian format, Month Year date ranges, GPA/honours |
+| **UK / EU CV** | 2-page norm, UK date format, hobbies only if present (never fabricated), "references available" |
 
 Each format = one extra GPT call with different formatting rules. Architecture: `POST /api/v1/export` with `format` field.
 
 ---
 
-### 🗺️ Phase 4 — Auth + Profiles + Paywall
+### 🚧 Phase 4 — Auth + Paywall
 - Supabase Auth (email + Google OAuth)
 - Save optimize/build results per user
-- Real shareable `/p/[username]` URLs
 - Stripe paywall — remove `isPaid={true}` hardcode, real subscription tier
 
 ### � Phase 5 — Platform Expansion Modes
@@ -196,18 +198,17 @@ They have already seen the improvement. The pain of not getting it drives conver
 
 | Layer | Technology | Notes |
 |---|---|---|
-| Frontend | Next.js 16 (App Router) | TypeScript, Tailwind CSS |
-| Auth | NextAuth.js | Google OAuth — sign up to unlock downloads |
-| Backend API | FastAPI (Python 3.13) | Async, parallel AI calls |
-| LLM | OpenAI GPT-4o | JSON mode for structured outputs |
-| Resume Parsing | pdfplumber + python-docx | PDF, DOCX, TXT support |
-| Resume Output | python-docx + WeasyPrint | DOCX and PDF generation |
-| Scroll Animations | Framer Motion | Profile page Phase 2 |
-| Database | PostgreSQL via Supabase | Free tier to start |
-| File Storage | Supabase Storage / S3 | Uploaded resumes, temp outputs |
-| Payments | Stripe | Subscription billing |
-| Frontend Hosting | Vercel | Auto-deploy from GitHub |
-| Backend Hosting | Railway or Render | FastAPI container deployment |
+| Frontend | Next.js 16 (App Router) | TypeScript, Tailwind CSS v4 |
+| Auth | Supabase (planned) | Email + Google OAuth — Phase 4 |
+| AI / LLM | OpenAI GPT-4o | JSON mode, called via Next.js Route Handlers |
+| File Parsing | mammoth + pdf-parse | PDF, DOCX, TXT — server-side in Route Handlers |
+| PDF Output | jsPDF | Client-side dynamic import |
+| DOCX Output | docx + file-saver | Client-side generation |
+| Profile Storage | Upstash Redis | Shareable profile links, 90-day TTL |
+| Scroll Animations | Framer Motion | Profile page + landing page |
+| Database | Supabase (planned) | Phase 4+ |
+| Payments | Stripe (planned) | Phase 4+ |
+| Hosting | Vercel | Auto-deploy from GitHub, dev → main |
 
 ---
 
@@ -219,23 +220,33 @@ User Input
   └── Job Description (paste)
           │
           ▼
-   Parsing Layer (FastAPI)
-  ├── pdfplumber   → PDF text extraction
-  ├── python-docx  → DOCX text extraction
-  └── plain text   → TXT passthrough
+   Next.js Route Handlers
+  ├── mammoth       → DOCX text extraction
+  ├── pdf-parse     → PDF text extraction
+  └── plain text    → TXT passthrough
           │
           ▼
    AI Processing Layer (OpenAI GPT-4o)          [parallel where possible]
   ├── Score BEFORE optimization
   ├── Rewrite resume (action verbs + JD keywords, no fabrication)
   ├── Score AFTER optimization
-  └── Generate cover letter
+  ├── Generate cover letter
+  ├── Shortlist assessment
+  └── Assessment-driven refinement (quick wins + gaps applied back)
           │
           ▼
    Output Layer
   ├── Score card (before / after)
-  ├── Optimized resume (download PDF + DOCX) — paid
-  └── Cover letter (download / copy)          — paid
+  ├── Optimized resume (download PDF + DOCX)     — paid
+  ├── Cover letter (download / copy)              — paid
+  ├── Shortlist assessment + gap analysis
+  ├── Export As (LinkedIn / WES / UK)
+  └── Shareable profile page (/p/[slug])
+          │
+          ▼
+   Storage Layer
+  ├── localStorage   → profile preview + resume text (owner)
+  └── Upstash Redis  → published shareable profiles (90-day TTL)
 ```
 
 ### AI Prompt Design Principles
