@@ -113,13 +113,13 @@ interface ProfileData {
 | # | Build | Status |
 |---|-------|--------|
 | A1 | Error handling + JSON safety — toasts, try/catch JSON.parse, OpenAI error codes (429/quota/key) | ✅ |
-| A2 | Input validation — server-side file size (10MB), resume/JD text length caps, file type enforcement | ⬜ |
-| A3 | Profile page polish — PDF download (not .txt), "Open to Work" toggle, OG meta tags | ⬜ |
-| A4 | DOCX export — add DOCX generation alongside PDF download | ⬜ |
-| A5 | Landing page accuracy — remove "Phase 2" tags, fix export dropdown click-outside, mobile ResultsPanel buttons | ⬜ |
-| A6 | Privacy + Terms pages — real content, data handling, OpenAI disclosure, no-training policy | ⬜ |
-| A7 | Footer links — wire or remove social links, verify GitHub link | ⬜ |
-| A8 | `.env.example` — document required env vars | ⬜ |
+| A2 | Input validation — server-side file size (10MB), resume/JD text length caps, file type enforcement | ✅ |
+| A3 | Profile page polish — PDF download (not .txt), "Open to Work" toggle, OG meta tags | ✅ |
+| A4 | DOCX export — add DOCX generation alongside PDF download | ✅ |
+| A5 | Landing page accuracy — remove "Phase 2" tags, fix export dropdown click-outside, mobile ResultsPanel buttons | ✅ |
+| A6 | Privacy + Terms pages — real content, data handling, OpenAI disclosure, no-training policy | ✅ |
+| A7 | Footer links — wire or remove social links, verify GitHub link | ✅ |
+| A8 | `.env.example` — document required env vars | ✅ |
 
 All A-items are independent — no blockers between them.
 
