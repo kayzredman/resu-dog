@@ -270,7 +270,7 @@ export default function BuildPage() {
   return (
     <div className={cn(
       "mx-auto px-4 py-10 sm:px-6 lg:px-8 transition-all duration-500",
-      wizardStep === 3 && buildResult ? "max-w-screen-xl" : "max-w-3xl"
+      wizardStep === 3 && buildResult ? "max-w-7xl" : "max-w-3xl"
     )}>
       {/* Header */}
       <div className="mb-8">
@@ -440,7 +440,7 @@ export default function BuildPage() {
               <p className="text-sm text-foreground-muted">
                 Everything look good? Hit Build to generate your tailored CV.
               </p>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-100 overflow-y-auto pr-1">
                 {analysis.questions.map((q) =>
                   answers[q.id] ? (
                     <div key={q.id} className="rounded-xl bg-background p-4 space-y-1">

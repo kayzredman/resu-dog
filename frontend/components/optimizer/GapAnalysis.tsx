@@ -48,7 +48,7 @@ export default function GapAnalysis({ skillsHeatmap, transferableBridges, gapRoa
       {/* Banner / toggle */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-[var(--overlay)] transition-colors group"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-(--overlay) transition-colors group"
       >
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">

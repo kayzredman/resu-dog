@@ -183,7 +183,7 @@ ${answersText}`,
       const score = parseAIResponse(scoreResult) as Record<string, unknown>;
 
       // Strip any leaked metadata from the resume text (GPT sometimes appends keywords_used)
-      const resumeText = (cv.resume ?? "")
+      const resumeText = String(cv.resume ?? "")
         .replace(/\nkeywords_used\s*:[\s\S]*$/i, "")
         .trim();
 

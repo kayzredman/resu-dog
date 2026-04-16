@@ -125,7 +125,7 @@ function TimelineEntry({
     >
       <span className="absolute left-0 top-1.5 h-3 w-3 rounded-full border-2 border-primary bg-background" />
       {index < 99 && (
-        <span className="absolute left-[5px] top-4 h-full w-0.5 bg-line" />
+        <span className="absolute left-1.25 top-4 h-full w-0.5 bg-line" />
       )}
       <div className="pb-8">
         <p className="text-xs text-foreground-muted mb-0.5">{role.period}</p>
@@ -202,7 +202,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <motion.div

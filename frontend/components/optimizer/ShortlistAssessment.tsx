@@ -89,7 +89,7 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
       {/* ── Banner (always visible) ── */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-foreground/[0.02] transition-colors"
+        className="w-full flex items-center justify-between gap-4 p-5 text-left hover:bg-foreground/2 transition-colors"
         aria-expanded={open}
       >
         <div className="flex items-center gap-4 min-w-0">

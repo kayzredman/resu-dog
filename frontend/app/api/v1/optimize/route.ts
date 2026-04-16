@@ -470,27 +470,31 @@ export async function POST(req: NextRequest) {
         optimizeResumeGeneral(client, resumeText),
       ]);
 
+      const optResult = optimizeResult as Record<string, unknown>;
+
       const [scoreAfter, assessment] = await Promise.all([
-        scoreResumeGeneral(client, optimizeResult.optimized_resume),
-        assessResume(client, optimizeResult.optimized_resume, null, "general"),
+        scoreResumeGeneral(client, optResult.optimized_resume as string),
+        assessResume(client, optResult.optimized_resume as string, null, "general"),
       ]);
 
       // Step 3 — apply assessment fixes to produce the final polished resume
       const refineResult = await refineWithAssessment(
         client,
-        optimizeResult.optimized_resume,
-        assessment,
+        optResult.optimized_resume as string,
+        assessment as Record<string, unknown>,
         null
       );
+
+      const refResult = refineResult as Record<string, unknown>;
 
       return NextResponse.json({
         mode: "general",
         score_before: scoreBefore,
         score_after: scoreAfter,
-        optimized_resume: refineResult.refined_resume ?? optimizeResult.optimized_resume,
+        optimized_resume: refResult.refined_resume ?? optResult.optimized_resume,
         changes_made: [
-          ...(optimizeResult.changes_made ?? []),
-          ...(refineResult.improvements_applied ?? []),
+          ...((optResult.changes_made as string[]) ?? []),
+          ...((refResult.improvements_applied as string[]) ?? []),
         ],
         keywords_added: [],
         cover_letter: "",
@@ -500,37 +504,41 @@ export async function POST(req: NextRequest) {
 
     // Targeted mode — existing flow
     // Step 1 — score original + optimize in parallel (both only need original text + JD)
-    const [scoreBefore, optimizeResult] = await Promise.all([
+    const [scoreBefore, optimizeRaw] = await Promise.all([
       scoreResume(client, resumeText, jobDescription!),
       optimizeResume(client, resumeText, jobDescription!),
     ]);
 
+    const optTargeted = optimizeRaw as Record<string, unknown>;
+
     // Step 2 — score the optimized resume + generate cover letter + assess in parallel
     const [scoreAfter, coverResult, assessment] = await Promise.all([
-      scoreResume(client, optimizeResult.optimized_resume, jobDescription!),
-      generateCoverLetter(client, optimizeResult.optimized_resume, jobDescription!),
-      assessResume(client, optimizeResult.optimized_resume, jobDescription!, "targeted"),
+      scoreResume(client, optTargeted.optimized_resume as string, jobDescription!),
+      generateCoverLetter(client, optTargeted.optimized_resume as string, jobDescription!),
+      assessResume(client, optTargeted.optimized_resume as string, jobDescription!, "targeted"),
     ]);
 
     // Step 3 — apply every assessment fix to produce the definitive final resume
     const refineResult = await refineWithAssessment(
       client,
-      optimizeResult.optimized_resume,
-      assessment,
+      optTargeted.optimized_resume as string,
+      assessment as Record<string, unknown>,
       jobDescription!
     );
+
+    const refTargeted = refineResult as Record<string, unknown>;
 
     return NextResponse.json({
       mode: "targeted",
       score_before: scoreBefore,
       score_after: scoreAfter,
-      optimized_resume: refineResult.refined_resume ?? optimizeResult.optimized_resume,
+      optimized_resume: refTargeted.refined_resume ?? optTargeted.optimized_resume,
       changes_made: [
-        ...(optimizeResult.changes_made ?? []),
-        ...(refineResult.improvements_applied ?? []),
+        ...((optTargeted.changes_made as string[]) ?? []),
+        ...((refTargeted.improvements_applied as string[]) ?? []),
       ],
-      keywords_added: optimizeResult.keywords_added ?? [],
-      cover_letter: coverResult.cover_letter ?? "",
+      keywords_added: (optTargeted.keywords_added as string[]) ?? [],
+      cover_letter: (coverResult as Record<string, unknown>).cover_letter ?? "",
       assessment,
     });
   } catch (err: unknown) {

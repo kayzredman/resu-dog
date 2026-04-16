@@ -98,7 +98,7 @@ export default function OptimizePage() {
   return (
     <div className={cn(
       "mx-auto px-4 py-10 sm:px-6 lg:px-8 transition-all duration-500",
-      hasDone ? "max-w-screen-xl" : "max-w-6xl"
+      hasDone ? "max-w-7xl" : "max-w-6xl"
     )}>
       {/* Header */}
       <div className="mb-8">
@@ -245,7 +245,7 @@ export default function OptimizePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl border border-dashed border-line text-center p-8"
+                className="flex flex-col items-center justify-center h-full min-h-100 rounded-2xl border border-dashed border-line text-center p-8"
               >
                 <div className="h-16 w-16 rounded-2xl bg-[#6c63ff]/10 border border-[#6c63ff]/20 flex items-center justify-center mb-4">
                   <Zap className="h-7 w-7 text-[#6c63ff]" />
@@ -267,7 +267,7 @@ export default function OptimizePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl border border-line bg-surface text-center p-8"
+                className="flex flex-col items-center justify-center h-full min-h-100 rounded-2xl border border-line bg-surface text-center p-8"
               >
                 <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
                 <p className="text-sm font-medium">Optimizing your resume…</p>

@@ -213,7 +213,7 @@ export default function ResultsPanel({
                       <button
                         key={f.key}
                         onClick={() => handleExport(f.key)}
-                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-foreground-muted hover:bg-foreground/[0.05] hover:text-foreground transition-colors text-left"
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-foreground-muted hover:bg-foreground/5 hover:text-foreground transition-colors text-left"
                       >
                         <span>{f.flag}</span>
                         {f.label}
@@ -243,7 +243,7 @@ export default function ResultsPanel({
             </div>
           </div>
 
-          <div className="rounded-xl bg-background p-4 max-h-[320px] overflow-y-auto">
+          <div className="rounded-xl bg-background p-4 max-h-80 overflow-y-auto">
             <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
               {optimizedResume}
             </pre>
@@ -282,7 +282,7 @@ export default function ResultsPanel({
                 Reformatting for {EXPORT_FORMATS.find((f) => f.key === exportFormat)?.label}…
               </div>
             ) : (
-              <div className="rounded-xl bg-background p-4 max-h-[360px] overflow-y-auto">
+              <div className="rounded-xl bg-background p-4 max-h-90 overflow-y-auto">
                 <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
                   {exportResult}
                 </pre>
@@ -302,7 +302,7 @@ export default function ResultsPanel({
         >
           <button
             onClick={() => setShowChanges(!showChanges)}
-            className="w-full flex items-center justify-between p-5 text-left hover:bg-foreground/[0.03] transition-colors"
+            className="w-full flex items-center justify-between p-5 text-left hover:bg-foreground/3 transition-colors"
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Changes Made</span>
@@ -373,7 +373,7 @@ export default function ResultsPanel({
               )}
             </div>
           </div>
-            <div className="rounded-xl bg-background p-4 max-h-[280px] overflow-y-auto">
+            <div className="rounded-xl bg-background p-4 max-h-70 overflow-y-auto">
             <p className="text-sm text-foreground-soft whitespace-pre-wrap leading-relaxed">
               {coverLetter}
             </p>
