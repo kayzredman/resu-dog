@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
 
 // ─── File text extraction ─────────────────────────────────────────────────────
 
@@ -77,7 +78,7 @@ ${jobDescription}`,
     response_format: { type: "json_object" },
     temperature: 0.3,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 async function scoreResume(
@@ -125,7 +126,7 @@ ${jobDescription}`,
     response_format: { type: "json_object" },
     temperature: 0.1,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 // ─── Shortlist assessment ─────────────────────────────────────────────────────
@@ -207,7 +208,7 @@ ${optimizedResume}`;
     response_format: { type: "json_object" },
     temperature: 0.2,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 async function generateCoverLetter(
@@ -243,7 +244,7 @@ ${jobDescription}`,
     response_format: { type: "json_object" },
     temperature: 0.5,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 // ─── General mode (no JD) functions ─────────────────────────────────────────
@@ -302,7 +303,7 @@ ${optimizedResume}${jdSection}`,
     response_format: { type: "json_object" },
     temperature: 0.3,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 
@@ -339,7 +340,7 @@ ${resumeText}`,
     response_format: { type: "json_object" },
     temperature: 0.3,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 async function scoreResumeGeneral(client: OpenAI, resumeText: string) {
@@ -378,7 +379,7 @@ ${resumeText}`,
     response_format: { type: "json_object" },
     temperature: 0.1,
   });
-  return JSON.parse(res.choices[0].message.content!);
+  return parseAIResponse(res);
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
@@ -494,9 +495,9 @@ export async function POST(req: NextRequest) {
       assessment,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unexpected server error";
     console.error("[optimize route]", err);
-    return NextResponse.json({ detail: message }, { status: 500 });
+    const { message, status } = handleOpenAIError(err);
+    return NextResponse.json({ detail: message }, { status });
   }
 }
 

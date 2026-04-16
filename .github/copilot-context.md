@@ -106,12 +106,39 @@ interface ProfileData {
 - ✅ Phase 2D: Skills Gap Analysis — heatmap + transferable bridges + gap roadmap
 - ✅ Phase 3: Public Profile Page (/p/preview) + Export As (LinkedIn/WES/UK) + Create Profile button in ResultsPanel
 
-## Up Next — Phase 4
-- Auth: Supabase (email + Google OAuth)
-- Real shareable `/p/[username]` routes (DB-backed, not localStorage)
-- Stripe paywall — remove `isPaid={true}` hardcode
-- Profile analytics ("X recruiters viewed your page this week")
+## Build Plan
 
-## Future Modes (post Phase 4)
+### Phase A — Build Features (dev, `isPaid={true}` still hardcoded)
+
+| # | Build | Status |
+|---|-------|--------|
+| A1 | Error handling + JSON safety — toasts, try/catch JSON.parse, OpenAI error codes (429/quota/key) | 🔨 |
+| A2 | Input validation — server-side file size (10MB), resume/JD text length caps, file type enforcement | ⬜ |
+| A3 | Profile page polish — PDF download (not .txt), "Open to Work" toggle, OG meta tags | ⬜ |
+| A4 | DOCX export — add DOCX generation alongside PDF download | ⬜ |
+| A5 | Landing page accuracy — remove "Phase 2" tags, fix export dropdown click-outside, mobile ResultsPanel buttons | ⬜ |
+| A6 | Privacy + Terms pages — real content, data handling, OpenAI disclosure, no-training policy | ⬜ |
+| A7 | Footer links — wire or remove social links, verify GitHub link | ⬜ |
+| A8 | `.env.example` — document required env vars | ⬜ |
+
+All A-items are independent — no blockers between them.
+
+### Phase B — Go-Live Prep (launch gate, after Phase A)
+
+| # | Build | Deps | Status |
+|---|-------|------|--------|
+| B1 | Supabase Auth — email + Google OAuth, login/signup, session, `useUser()` | — | ⬜ |
+| B2 | `isPaid` wiring — real subscription check, `LockedOverlay` → checkout, free tier limits | B1 | ⬜ |
+| B3 | Stripe integration — checkout, webhooks, subscription status in Supabase | B1+B2 | ⬜ |
+| B4 | Rate limiting — by user ID or IP, free: 2/day, paid: unlimited | B1 | ⬜ |
+| B5 | Profile persistence — Supabase DB, slug generation, `/p/[slug]`, view counter | B1 | ⬜ |
+| B6 | Security hardening — rotate API key, CORS prod-only, Vercel env vars, API protection | B1+B3 | ⬜ |
+| B7 | Production infra — custom domain, Sentry, analytics | B6 | ⬜ |
+| B8 | Launch checklist — merge dev→main, CI green, smoke test, Stripe live mode | B1-B7 | ⬜ |
+
+Critical path: B1 → B2 → B3 → B6 → B7 → B8. B4 and B5 parallel with B2-B3.
+
+## Future Modes (post-launch)
 - ATS-specific optimizer (Workday, Greenhouse, Lever)
 - AU / CA CV format variants
+- Profile analytics ("X recruiters viewed your page this week")

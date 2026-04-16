@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface ResultsPanelProps {
   optimizedResume: string;
@@ -210,7 +211,11 @@ export default function ResultsPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: optimizedResume }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.detail ?? "Failed to create profile. Please try again.");
+        return;
+      }
       const profile = await res.json();
       if (atsScore) profile.ats_score = atsScore;
       localStorage.setItem("resudog_profile", JSON.stringify(profile));
@@ -239,7 +244,11 @@ export default function ResultsPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume: optimizedResume, format }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.detail ?? "Export failed. Please try again.");
+        return;
+      }
       const data = await res.json();
       setExportResult(data.formatted ?? data.about ?? JSON.stringify(data, null, 2));
     } finally {

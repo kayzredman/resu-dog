@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
 
 // POST /api/v1/export
 // Body: { resume: string; format: "linkedin" | "wes" | "uk" }
@@ -99,10 +100,10 @@ export async function POST(req: NextRequest) {
       temperature: 0.3,
     });
 
-    return NextResponse.json(JSON.parse(res.choices[0].message.content!));
+    return NextResponse.json(parseAIResponse(res));
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unexpected server error";
     console.error("[export route]", err);
-    return NextResponse.json({ detail: message }, { status: 500 });
+    const { message, status } = handleOpenAIError(err);
+    return NextResponse.json({ detail: message }, { status });
   }
 }

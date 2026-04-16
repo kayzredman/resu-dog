@@ -14,6 +14,7 @@ import {
   PenLine,
   Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import ScoreCard from "@/components/optimizer/ScoreCard";
 import ResultsPanel from "@/components/optimizer/ResultsPanel";
@@ -194,7 +195,11 @@ export default function BuildPage() {
           existing_answers: answers,
         }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.detail ?? "AI assist failed. Please try again.");
+        return;
+      }
       const data = await res.json();
       if (data.suggestion) {
         setAnswers((prev) => ({ ...prev, [q.id]: data.suggestion }));

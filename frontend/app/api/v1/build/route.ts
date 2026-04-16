@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
 
 // ─── POST /api/v1/build ───────────────────────────────────────────────────────
 //
@@ -75,7 +76,7 @@ ${job_description}`,
         temperature: 0.3,
       });
 
-      return NextResponse.json(JSON.parse(res.choices[0].message.content!));
+      return NextResponse.json(parseAIResponse(res));
     }
 
     // ── Action: write ──────────────────────────────────────────────────────────
@@ -175,8 +176,8 @@ ${answersText}`,
         }),
       ]);
 
-      const cv = JSON.parse(writeResult.choices[0].message.content!);
-      const score = JSON.parse(scoreResult.choices[0].message.content!);
+      const cv = parseAIResponse(writeResult) as Record<string, unknown>;
+      const score = parseAIResponse(scoreResult) as Record<string, unknown>;
 
       // Strip any leaked metadata from the resume text (GPT sometimes appends keywords_used)
       const resumeText = (cv.resume ?? "")
@@ -232,7 +233,7 @@ ${job_description}`,
         temperature: 0.2,
       });
 
-      const assessment = JSON.parse(assessmentResult.choices[0].message.content!);
+      const assessment = parseAIResponse(assessmentResult) as Record<string, unknown>;
 
       // Step 3 — apply assessment fixes to produce the definitive final resume
       const quickWins = (assessment.quick_wins as string[])
@@ -281,8 +282,8 @@ ${job_description}`,
         temperature: 0.3,
       });
 
-      const refined = JSON.parse(refineResult.choices[0].message.content!);
-      const finalResume = (refined.refined_resume ?? resumeText)
+      const refined = parseAIResponse(refineResult) as Record<string, unknown>;
+      const finalResume = ((refined.refined_resume as string) ?? resumeText)
         .replace(/\nkeywords_used\s*:[\s\S]*$/i, "")
         .trim();
 
@@ -339,13 +340,13 @@ Return ONLY valid JSON: { "suggestion": "<draft answer text>" }`,
         temperature: 0.7,
       });
 
-      return NextResponse.json(JSON.parse(res.choices[0].message.content!));
+      return NextResponse.json(parseAIResponse(res));
     }
 
     return NextResponse.json({ detail: `Unknown action: ${action}` }, { status: 400 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unexpected server error";
     console.error("[build route]", err);
-    return NextResponse.json({ detail: message }, { status: 500 });
+    const { message, status } = handleOpenAIError(err);
+    return NextResponse.json({ detail: message }, { status });
   }
 }
