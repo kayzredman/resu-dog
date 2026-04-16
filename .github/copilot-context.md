@@ -112,7 +112,7 @@ interface ProfileData {
 
 | # | Build | Status |
 |---|-------|--------|
-| A1 | Error handling + JSON safety — toasts, try/catch JSON.parse, OpenAI error codes (429/quota/key) | 🔨 |
+| A1 | Error handling + JSON safety — toasts, try/catch JSON.parse, OpenAI error codes (429/quota/key) | ✅ |
 | A2 | Input validation — server-side file size (10MB), resume/JD text length caps, file type enforcement | ⬜ |
 | A3 | Profile page polish — PDF download (not .txt), "Open to Work" toggle, OG meta tags | ⬜ |
 | A4 | DOCX export — add DOCX generation alongside PDF download | ⬜ |
