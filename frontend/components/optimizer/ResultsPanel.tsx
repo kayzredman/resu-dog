@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2 } from "lucide-react";
+import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { downloadPDF } from "@/lib/pdf";
+import { downloadDOCX } from "@/lib/docx";
 
 interface ResultsPanelProps {
   optimizedResume: string;
@@ -78,6 +79,7 @@ export default function ResultsPanel({
   const [exportResult, setExportResult] = useState<string | null>(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
 
   const handleCreateProfile = async () => {
     if (!optimizedResume) return;
@@ -138,6 +140,12 @@ export default function ResultsPanel({
     setDownloadingResume(true);
     await downloadPDF("optimized-resume.pdf", optimizedResume);
     setDownloadingResume(false);
+  };
+
+  const handleDocxDownload = async () => {
+    setDownloadingDocx(true);
+    await downloadDOCX("optimized-resume.docx", optimizedResume);
+    setDownloadingDocx(false);
   };
 
   const handleCoverDownload = async () => {
@@ -205,12 +213,20 @@ export default function ResultsPanel({
 
               {isPaid && <CopyButton text={optimizedResume} />}
               <button
+                disabled={!isPaid || downloadingDocx}
+                onClick={handleDocxDownload}
+                className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                {downloadingDocx ? "Generating…" : "DOCX"}
+              </button>
+              <button
                 disabled={!isPaid || downloadingResume}
                 onClick={handleResumeDownload}
                 className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark active:scale-95 active:bg-[#5a52e0] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileDown className="h-3.5 w-3.5" />
-                {downloadingResume ? "Generating…" : "Download PDF"}
+                {downloadingResume ? "Generating…" : "PDF"}
               </button>
             </div>
           </div>
