@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -80,6 +80,18 @@ export default function ResultsPanel({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showExportMenu]);
 
   const handleCreateProfile = async () => {
     if (!optimizedResume) return;
@@ -174,7 +186,7 @@ export default function ResultsPanel({
                 Assessment refined
               </span>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
               {/* Create Profile */}
               <button
                 onClick={handleCreateProfile}
@@ -186,7 +198,7 @@ export default function ResultsPanel({
               </button>
 
               {/* Export As dropdown */}
-              <div className="relative">
+              <div className="relative" ref={exportRef}>
                 <button
                   onClick={() => setShowExportMenu((v) => !v)}
                   className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"

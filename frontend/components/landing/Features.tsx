@@ -47,17 +47,17 @@ const features = [
     icon: Eye,
     title: "Public Profile Page",
     description:
-      "Share a beautiful scroll-based resume landing page with a 'Hire Me' CTA. See who viewed it. Coming Phase 2.",
-    tag: "Phase 2",
-    tagColor: "#f59e0b",
+      "Share a beautiful one-page resume site with a 'Hire Me' CTA, ATS score badge, and PDF download. Toggle your availability status.",
+    tag: "New",
+    tagColor: "#22c55e",
   },
   {
     icon: Users,
-    title: "Multi-Platform Modes",
+    title: "Multi-Platform Export",
     description:
-      "Optimize for LinkedIn, WES credential evaluation, UK/AU/CA CV formats, and specific ATS systems like Workday and Greenhouse.",
-    tag: "Phase 2",
-    tagColor: "#f59e0b",
+      "Export your optimized resume for LinkedIn, WES credential evaluation, or UK/EU CV format — one click, perfectly formatted.",
+    tag: "New",
+    tagColor: "#22c55e",
   },
 ];
 
