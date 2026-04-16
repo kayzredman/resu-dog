@@ -7,6 +7,7 @@ import {
   GraduationCap, Star, Award, CheckCircle2, PawPrint, ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
+import { downloadPDF } from "@/lib/pdf";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -190,6 +191,7 @@ function NoProfile() {
 export default function ProfilePreviewPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [openToWork, setOpenToWork] = useState(true);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -242,9 +244,16 @@ export default function ProfilePreviewPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-2xl font-extrabold tracking-tight">{profile.name}</h1>
-              <span className="rounded-full bg-[#22c55e]/10 border border-[#22c55e]/25 px-2.5 py-0.5 text-[11px] font-bold text-[#22c55e]">
-                ● Open to Work
-              </span>
+              <button
+                onClick={() => setOpenToWork((v) => !v)}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border transition-colors ${
+                  openToWork
+                    ? "bg-[#22c55e]/10 border-[#22c55e]/25 text-[#22c55e]"
+                    : "bg-foreground/5 border-line text-foreground-muted"
+                }`}
+              >
+                {openToWork ? "● Open to Work" : "○ Not Looking"}
+              </button>
               {profile.ats_score && (
                 <span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-[11px] font-bold text-primary">
                   ATS {profile.ats_score}/100
@@ -420,12 +429,7 @@ export default function ProfilePreviewPage() {
               onClick={() => {
                 const raw = localStorage.getItem("resudog_resume");
                 if (!raw) return;
-                // Trigger PDF download using the existing downloadPDF flow via blob
-                const link = document.createElement("a");
-                const blob = new Blob([raw], { type: "text/plain" });
-                link.href = URL.createObjectURL(blob);
-                link.download = `${profile.name.replace(/\s+/g, "-")}-CV.txt`;
-                link.click();
+                downloadPDF(`${profile.name.replace(/\s+/g, "-")}-CV.pdf`, raw);
               }}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
             >
