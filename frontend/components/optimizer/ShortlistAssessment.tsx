@@ -107,7 +107,7 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
 
           {/* Progress bar + rationale */}
           <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="h-1.5 w-full max-w-[200px] rounded-full bg-line overflow-hidden">
+            <div className="h-1.5 w-full max-w-50 rounded-full bg-line overflow-hidden">
               <motion.div
                 className="h-full rounded-full"
                 style={{ backgroundColor: cfg.color }}
