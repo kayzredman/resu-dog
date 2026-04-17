@@ -3,17 +3,22 @@
 import { useEffect } from "react";
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 
-/** Set theme based on local time if user hasn't manually chosen one. */
+export const THEME_PREF_KEY = "theme-preference"; // "auto" | "light" | "dark"
+
+export function getTimeBasedTheme() {
+  const hour = new Date().getHours();
+  return hour >= 6 && hour < 18 ? "light" : "dark";
+}
+
+/** Apply time-based theme when preference is "auto" (or unset). */
 function TimeBasedDefault() {
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    // If user already picked a theme manually, don't override
-    if (localStorage.getItem("theme")) return;
+    const pref = localStorage.getItem(THEME_PREF_KEY);
+    if (pref && pref !== "auto") return; // user chose light/dark explicitly
 
-    const hour = new Date().getHours();
-    // 6 AM – 6 PM → light, otherwise → dark
-    setTheme(hour >= 6 && hour < 18 ? "light" : "dark");
+    setTheme(getTimeBasedTheme());
   }, [setTheme]);
 
   return null;
