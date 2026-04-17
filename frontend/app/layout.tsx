@@ -17,10 +17,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Resu-Dog — AI Resume Optimizer",
+  title: {
+    default: "Resu-Dog — AI Resume Optimizer",
+    template: "%s | Resu-Dog",
+  },
   description:
     "Optimize your resume with AI. Get an ATS compatibility score, rewritten experience, and a matching cover letter in seconds.",
   keywords: ["resume optimizer", "ATS", "cover letter", "job application", "AI resume"],
+  metadataBase: new URL("https://resume-dog.vercel.app"),
+  openGraph: {
+    title: "Resu-Dog — AI Resume Optimizer",
+    description:
+      "Optimize your resume with AI. Get an ATS compatibility score, rewritten experience, and a matching cover letter in seconds.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Resu-Dog — AI Resume Optimizer",
+    description:
+      "Optimize your resume with AI. Get an ATS compatibility score, rewritten experience, and a matching cover letter in seconds.",
+    images: ["/og-image.png"],
+  },
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
