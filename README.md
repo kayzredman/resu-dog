@@ -71,7 +71,7 @@ Most people lose jobs before a human ever reads their resume. ATS systems filter
 - Independent before/after compatibility scores
 - Cover letter generated from the optimized resume
 - PDF download
-- Light/dark theme with semantic token system
+- Time-aware theme: auto light (6 AM–6 PM) / dark (6 PM–6 AM) based on local time, manual toggle persists preference
 - Next.js Route Handler — no separate backend required
 
 ### ✅ Phase 2A — JD-Optional Mode (shipped)
@@ -144,6 +144,13 @@ Sidebar (sticky): Stats · Hire Me CTA · Share/Copy Link · Download CV · Link
 Each format = one extra GPT call with different formatting rules. Architecture: `POST /api/v1/export` with `format` field.
 
 ---
+
+### 🚧 Phase 3B — Time-Aware Theme (shipped)
+
+- **Auto theme**: First-time visitors get light or dark based on local time (6 AM–6 PM = light, otherwise dark)
+- **Manual override persists**: Once user toggles the theme, their preference is saved in `localStorage` and sticks across visits
+- **No geolocation needed**: Uses `new Date().getHours()` which respects the browser's local timezone
+- Implementation: `TimeBasedDefault` child component inside `ThemeProvider` checks `localStorage.theme` on mount — only applies time-based default if no manual preference exists
 
 ### 🚧 Phase 4 — Auth + Paywall
 
