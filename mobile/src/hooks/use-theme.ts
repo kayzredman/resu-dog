@@ -1,5 +1,6 @@
 /**
- * Follows the phone's light/dark setting.
+ * The app is set to dark at startup (app/_layout.tsx), so this returns the dark palette;
+ * it still follows the scheme in case that changes.
  * https://docs.expo.dev/develop/user-interface/color-themes/
  */
 

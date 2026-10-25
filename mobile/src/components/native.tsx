@@ -97,7 +97,8 @@ export function NativeButton({
     <Host
       // Full width: we set the width, the native button sets its height. Compact: size to the button.
       matchContents={fullWidth ? { vertical: true } : true}
-      seedColor={c.primary}
+      // Filled buttons carry white text on violet; the others use the lighter violet so their text stays readable on dark
+      seedColor={variant === 'filled' ? c.primary : c.primaryInk}
       style={fullWidth ? styles.fullWidth : undefined}>
       <Button
         label={Platform.OS === 'ios' && fullWidth ? undefined : label}

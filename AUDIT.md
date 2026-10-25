@@ -301,3 +301,8 @@ International formats (LinkedIn, Canada/WES, UK) and the shareable profile are n
 - [ ] Upstash Redis in production, so profiles persist.
 - [ ] Privacy policy and the app's About still name OpenAI; update them for the provider chosen at launch.
 - [ ] Profile "blog"/story section: the profile summary is the write-up for now.
+
+## One brand — 2026-10-25
+
+The app now uses the website's look: violet `#5B52F0` on dark `#0A0A0F`, teal `#00D4AA` for positive states, and the same paw mark (Lucide paw-print on `#6C63FF`). The app runs in dark mode like the site (native controls included). Every text pair still meets WCAG AA; secondary buttons use the lighter violet `#8B84FF` so they stay readable on dark. The template Expo icon has been replaced with the paw for iOS, Android (adaptive + monochrome), splash and favicon. Icons show on a real install or development build; Expo Go always shows its own icon.
+- [ ] Before launch: a custom paw mark, so the logo isn't a stock icon.

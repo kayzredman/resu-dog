@@ -3,7 +3,7 @@ import { NativeTabs } from 'expo-router/native-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 
 import { Welcome } from '@/components/welcome';
 import { Colors } from '@/constants/theme';
@@ -11,6 +11,9 @@ import { IntroProvider, useIntro } from '@/lib/intro';
 import { SessionProvider } from '@/lib/session';
 
 SplashScreen.preventAutoHideAsync();
+
+// Dark like the website, including the native controls (SwiftUI / Compose follow this too)
+Appearance.setColorScheme('dark');
 
 export default function RootLayout() {
   return (
