@@ -44,17 +44,19 @@ const FIT: Record<Mode, Record<Verdict, { label: string; tone: 'primary' | 'plac
   },
 };
 
+const PLACEHOLDER_SCORING = { heading: 'Your [brackets]', body: 'Scores are worked out on the resume as it is now, before you fill in your real numbers. We don’t count the brackets against you.' };
+
 const SCORING_SECTIONS_JOB = [
   { heading: 'Keyword coverage — counted', body: 'We list the key skills in the job description, then count how many your resume actually contains. The same list is used before and after, so the two are comparable.' },
   { heading: 'Skills alignment — AI estimate', body: 'How closely your experience matches what the role asks for, judged in a recruiter style. Treat it as a guide.' },
   { heading: 'Easy for hiring software to read — AI estimate', body: 'Applicant tracking systems (ATS) read plain, single-column resumes most reliably. This checks your layout and section headings.' },
-  { heading: 'What it can’t tell you', body: 'No tool can say how a particular employer’s system or recruiter will rank you. The score is our estimate, scored on the resume before you fill in your numbers.' },
+  { heading: 'What it can’t tell you', body: 'No tool can say how a particular employer’s system or recruiter will rank you. The score is our estimate.' },
 ];
 
 const SCORING_SECTIONS_POLISH = [
   { heading: 'No job, no keyword matching', body: 'Without a job description we don’t match keywords. We score how strong the resume is on its own.' },
   { heading: 'Clarity, action language, structure, completeness — AI estimates', body: 'Is it easy to read? Do bullets lead with strong verbs and real results? Are sections in a sensible order? Is anything essential missing (contact, experience, education, skills)?' },
-  { heading: 'The overall score', body: 'The plain average of those four, worked out by us, not guessed. Scored on the resume before you fill in your numbers.' },
+  { heading: 'The overall score', body: 'The plain average of those four, worked out by us, not guessed.' },
   { heading: 'Want a match score?', body: 'Switch to “For a job” and paste a job description to see how well you fit a specific role.' },
 ];
 
@@ -224,7 +226,7 @@ export function ResultsView({ mode, scoreBefore, scoreAfter, assessment, resume:
         </T>
       </View>
 
-      <InfoSheet title="How is this scored?" sections={mode === 'general' ? SCORING_SECTIONS_POLISH : SCORING_SECTIONS_JOB} isPresented={scoringOpen} onDismiss={() => setScoringOpen(false)} />
+      <InfoSheet title="How is this scored?" sections={[...(mode === 'general' ? SCORING_SECTIONS_POLISH : SCORING_SECTIONS_JOB), ...(resumePlaceholders > 0 ? [PLACEHOLDER_SCORING] : [])]} isPresented={scoringOpen} onDismiss={() => setScoringOpen(false)} />
     </View>
   );
 }
@@ -334,16 +336,18 @@ function NextMoves({
   const gap = assessment?.critical_gaps?.[0];
   const quickWin = assessment?.quick_wins?.[0];
 
-  const moves: { done: boolean; title: string; detail: string; action?: { label: string; onPress: () => void } }[] = [
+  // Only talk about [brackets] when there are some to fill in
+  const moves: { done: boolean; title: string; detail: string; action?: { label: string; onPress: () => void } }[] =
     placeholders > 0
-      ? {
-          done: false,
-          title: `Add ${placeholders} real number${placeholders === 1 ? '' : 's'}`,
-          detail: 'We left [brackets] where a figure would make a line stronger. Only you know them.',
-          action: { label: 'Fill them in', onPress: onFill },
-        }
-      : { done: true, title: 'Every number is filled in', detail: 'No [brackets] left in your resume.' },
-  ];
+      ? [
+          {
+            done: false,
+            title: `Add ${placeholders} real number${placeholders === 1 ? '' : 's'}`,
+            detail: 'We left [brackets] where a figure would make a line stronger. Only you know them.',
+            action: { label: 'Fill them in', onPress: onFill },
+          },
+        ]
+      : [];
   const hasPlans = !!assessment?.gap_roadmap?.length;
   if (gap && mode === 'general') {
     moves.push({
@@ -367,6 +371,9 @@ function NextMoves({
       detail: 'Written from your final resume. About two minutes.',
       action: { label: 'Open the letter', onPress: onLetter },
     });
+  }
+  if (!moves.length) {
+    moves.push({ done: true, title: 'Read it through, then send it', detail: 'Check every line is true and sounds like you.' });
   }
 
   return (

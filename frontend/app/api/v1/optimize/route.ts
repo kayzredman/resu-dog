@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
 import { rateLimit } from "@/lib/rate-limit";
-import { NO_FABRICATION_RULES, PLACEHOLDER_NOTE, stripInventedContacts } from "@/lib/prompt-rules";
+import { NO_FABRICATION_RULES, PLACEHOLDER_NOTE, PLACEHOLDER_PATTERN, stripInventedContacts } from "@/lib/prompt-rules";
 import { verifyClaims, hasTerm, supports } from "@/lib/claim-guard";
 
 // The full pipeline makes several sequential AI calls
@@ -194,10 +194,17 @@ function withQualityAverage(score: Score): Score {
   return { ...score, overall_score: Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) };
 }
 
-/** Drops "changes made" entries that describe claims the guard removed. */
-function withoutRemoved(changes: string[], removed: string[]): string[] {
-  if (!removed.length) return changes;
-  return changes.filter((c) => !removed.some((t) => hasTerm(c, t)));
+/**
+ * Drops "changes made" entries that describe claims the guard removed, and any that talk
+ * about [placeholders] when the final resume has none left.
+ */
+function withoutRemoved(changes: string[], removed: string[], finalResume: string): string[] {
+  const hasPlaceholders = (finalResume.match(PLACEHOLDER_PATTERN) ?? []).length > 0;
+  return changes.filter(
+    (c) =>
+      !removed.some((t) => hasTerm(c, t)) &&
+      (hasPlaceholders || !/placeholder|bracket|\[[^\]]*\]/i.test(c))
+  );
 }
 
 // ─── Shortlist assessment ─────────────────────────────────────────────────────
@@ -535,7 +542,8 @@ export async function POST(req: NextRequest) {
         optimized_resume: finalResume,
         changes_made: withoutRemoved(
           [...((optResult.changes_made as string[]) ?? []), ...((refResult.improvements_applied as string[]) ?? [])],
-          removed
+          removed,
+          finalResume
         ),
         keywords_added: [],
         cover_letter: "",
@@ -601,7 +609,8 @@ export async function POST(req: NextRequest) {
       optimized_resume: finalResume,
       changes_made: withoutRemoved(
         [...((optTargeted.changes_made as string[]) ?? []), ...((refTargeted.improvements_applied as string[]) ?? [])],
-        removed
+        removed,
+        finalResume
       ),
       // Only keywords the candidate genuinely has
       keywords_added: ((optTargeted.keywords_added as string[]) ?? []).filter((k) => supports(resumeText, k)),
