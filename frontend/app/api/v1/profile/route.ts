@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
+import { verifyClaims } from "@/lib/claim-guard";
 import { requirePro } from "@/lib/entitlements";
+import { NO_FABRICATION_RULES, stripInventedContacts } from "@/lib/prompt-rules";
 import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/v1/profile
@@ -38,6 +40,7 @@ Return ONLY valid JSON with this exact structure:
   "email": "<email if present, else null>",
   "linkedin": "<LinkedIn URL if present, else null>",
   "summary": "<professional summary — 2–3 sentences, using only what the resume states>",
+  "story": "<'My story' for a public profile: first person, 2 short paragraphs, 80–130 words in all. Paragraph 1: the kind of work they do and where (roles, employers, field). Paragraph 2: what they have done, drawn from the resume's own bullets, and their education or certifications. Plain, warm, specific. Only facts the resume states: no personality traits, passions, motivations, goals or numbers it doesn't give.>",
   "years_experience": <integer — total years of professional experience>,
   "industries": ["<industry 1>", "<industry 2>"],
   "skills": ["<skill 1>", "<skill 2>"],
@@ -66,11 +69,23 @@ Rules:
 - certifications: return [] if none present.
 - industries: 1–3 industries the candidate has worked in.
 - years_experience: calculate from earliest to latest role. If unclear, estimate conservatively.
+- story: separate the two paragraphs with a blank line. No headings, bullets or placeholders.
+
+${NO_FABRICATION_RULES}
 
 RESUME:
 ${resume}`, { temperature: 0.1 });
 
-    return NextResponse.json(res);
+    // The summary and story are prose a stranger will read: same honesty check as the resume
+    const profile = res as Record<string, unknown>;
+    for (const field of ["summary", "story"] as const) {
+      if (typeof profile[field] === "string" && profile[field]) {
+        const clean = stripInventedContacts(profile[field] as string, resume);
+        profile[field] = (await verifyClaims(clean, resume, { kind: "profile" })).text;
+      }
+    }
+
+    return NextResponse.json(profile);
   } catch (err: unknown) {
     console.error("[profile route]", err);
     const { message, status } = handleAIError(err);

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { aiDisclosure } from "@/lib/ai-disclosure";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Resu-Dog",
+  title: "Privacy Policy",
   description: "How Resu-Dog handles your data, uses AI, and protects your privacy.",
 };
 
 export default function PrivacyPage() {
+  const ai = aiDisclosure();
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-extrabold tracking-tight mb-2">Privacy Policy</h1>
@@ -25,10 +27,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground mb-2">2. How we use AI</h2>
           <p>
-            Resu-Dog sends your resume and job description to the <strong>OpenAI API</strong> to perform optimization,
-            scoring, assessment, cover letter generation, and profile extraction. Under OpenAI&apos;s API terms, this data
-            is <strong>not used to train their models</strong>. OpenAI may keep API inputs and outputs for up to 30 days
-            to monitor for abuse, then deletes them.
+            Resu-Dog sends your resume and job description to <strong>{ai.service}</strong> to perform optimization,
+            scoring, assessment, cover letter generation, international formats and profile extraction. {ai.terms}
           </p>
         </section>
 
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground mb-2">5. Third-party services</h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>OpenAI</strong> — AI processing (no training; up to 30-day abuse-monitoring retention)</li>
+            <li><strong>{ai.company}</strong> — {ai.summary}</li>
             <li><strong>Upstash</strong> — storage for shared profile pages and abuse-prevention counters</li>
             <li><strong>Vercel</strong> — hosting and edge delivery</li>
           </ul>

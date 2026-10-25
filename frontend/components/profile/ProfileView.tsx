@@ -5,7 +5,7 @@ import { motion, useInView } from "framer-motion";
 import {
   MapPin, Mail, Download, Send, Briefcase,
   GraduationCap, Star, Award, CheckCircle2, PawPrint, ExternalLink,
-  Share2, Check, Link2, EyeOff, Trash2,
+  Share2, Check, Link2, EyeOff, Trash2, BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { downloadPDF } from "@/lib/pdf";
@@ -19,6 +19,8 @@ export interface ProfileData {
   email: string | null;
   linkedin: string | null;
   summary: string;
+  /** A short first-person "About me", written from the resume and editable by the owner */
+  story?: string;
   years_experience: number;
   industries: string[];
   skills: string[];
@@ -299,6 +301,16 @@ export default function ProfileView({
 
         {/* ── Main ─────────────────────────────────────────────────────── */}
         <div className="space-y-5">
+          {profile.story?.trim() && (
+            <Section title="My story" icon={BookOpen}>
+              <div className="space-y-3 text-sm text-foreground-soft leading-relaxed">
+                {profile.story.split(/\n\s*\n/).map((para, i) => (
+                  <p key={i}>{para.trim()}</p>
+                ))}
+              </div>
+            </Section>
+          )}
+
           {profile.skills?.length > 0 && (
             <Section title="What I bring" icon={Star}>
               <div className="flex flex-wrap gap-2">

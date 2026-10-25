@@ -7,13 +7,14 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, Share, View } from 'react-native';
+import { Alert, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { NativeButton, NativeSwitch } from '@/components/native';
 import { ProLocked, ProPill } from '@/components/pro';
 import { Bullets, Card, Notice, Pill, Screen, T } from '@/components/ui';
 import { WorkingCard } from '@/components/working-card';
-import { Spacing } from '@/constants/theme';
+import { BodySize, Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { extractProfile, publishProfile, unpublishProfile } from '@/lib/api';
 import { usePro } from '@/lib/entitlements';
 import { countPlaceholders } from '@/lib/placeholders';
@@ -145,6 +146,7 @@ export default function ProfileScreen() {
     <Screen>
       <T tone="muted">This is what people will see. Check it’s right before you publish.</T>
       <ProfilePreview profile={profile} options={options} />
+      <StoryEditor value={profile.story ?? ''} onChange={(story) => setProfile((p) => (p ? { ...p, story } : p))} />
 
       <Card>
         <T variant="title">What to share</T>
@@ -179,6 +181,31 @@ function Intro() {
         </T>
       </View>
     </>
+  );
+}
+
+/** "My story": written from the resume, then theirs to edit. Empty means the section isn't shown. */
+function StoryEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const c = useTheme();
+  return (
+    <Card>
+      <T variant="title">My story</T>
+      <T variant="footnote" tone="muted">
+        A short “About me” written only from your resume. Make it sound like you, or clear it to leave it out.
+      </T>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        multiline
+        scrollEnabled={false}
+        textAlignVertical="top"
+        maxLength={2000}
+        accessibilityLabel="My story"
+        placeholder="A few lines about the work you do and what you’ve done."
+        placeholderTextColor={c.textMuted}
+        style={[styles.story, { color: c.text, borderColor: c.lineStrong, backgroundColor: c.background }]}
+      />
+    </Card>
   );
 }
 
@@ -294,3 +321,7 @@ function PublishedCard({ published }: { published: PublishedProfile }) {
     </Card>
   );
 }
+
+const styles = StyleSheet.create({
+  story: { minHeight: 140, borderWidth: 1, borderRadius: Radius.md, padding: Spacing.md, fontSize: BodySize, lineHeight: 22 },
+});

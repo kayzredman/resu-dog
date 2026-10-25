@@ -56,15 +56,18 @@ export class AIError extends Error {
   }
 }
 
-function resolveConfig(): AIConfig | { error: string } {
+/** The provider the server uses: AI_PROVIDER if set, else whichever key is present (OpenAI first). */
+export function currentProvider(): AIProvider | null {
   const requested = process.env.AI_PROVIDER?.trim().toLowerCase();
-  let provider: AIProvider;
-  if (requested === "openai" || requested === "gemini") {
-    provider = requested;
-  } else if (requested) {
-    return { error: `AI_PROVIDER "${requested}" is not supported. Use "gemini" or "openai".` };
-  } else {
-    provider = process.env.OPENAI_API_KEY ? "openai" : "gemini";
+  if (requested === "openai" || requested === "gemini") return requested;
+  if (requested) return null;
+  return process.env.OPENAI_API_KEY ? "openai" : "gemini";
+}
+
+function resolveConfig(): AIConfig | { error: string } {
+  const provider = currentProvider();
+  if (!provider) {
+    return { error: `AI_PROVIDER "${process.env.AI_PROVIDER}" is not supported. Use "gemini" or "openai".` };
   }
 
   const apiKey = process.env[KEY_VARS[provider]]?.trim();

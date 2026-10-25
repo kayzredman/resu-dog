@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Professional Profile — Resu-Dog",
+  title: "Professional Profile",
   description:
     "View this candidate's professional profile — skills, experience, education, and more. Powered by Resu-Dog AI.",
   robots: { index: false, follow: false },

@@ -62,6 +62,7 @@ export function sanitizeProfile(input: unknown, options: PublishOptions): Profil
     email: options.showEmail ? safeEmail(p.email) : null,
     linkedin: safeLinkedIn(p.linkedin),
     summary: str(p.summary, 1200),
+    story: str(p.story, 2000),
     years_experience: Number.isFinite(years) ? Math.min(Math.max(Math.round(years), 0), 60) : 0,
     industries: strList(p.industries, 5, 60),
     skills: strList(p.skills, 24, 60),

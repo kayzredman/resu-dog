@@ -22,8 +22,9 @@ const SCORING: [string, string, string][] = [
 ];
 
 const DATA = [
-  'Your resume is sent securely to our server and to OpenAI to process, then discarded. We don’t save it.',
-  'OpenAI doesn’t train on it, and keeps it for at most 30 days for abuse monitoring.',
+  'Your resume is sent securely to our server and to our AI provider to process, then discarded. We don’t save it.',
+  'The privacy policy names the AI provider and how it treats your data.',
+  'A profile is stored only if you publish one, and you can take it down any time.',
   'Results stay on this phone only until you close the app — save your PDF.',
 ];
 

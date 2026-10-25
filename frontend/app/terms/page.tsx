@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { aiDisclosure } from "@/lib/ai-disclosure";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Resu-Dog",
+  title: "Terms of Service",
   description: "Terms and conditions for using Resu-Dog AI resume optimization.",
 };
 
 export default function TermsPage() {
+  const ai = aiDisclosure();
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="text-3xl font-extrabold tracking-tight mb-2">Terms of Service</h1>
@@ -18,8 +20,8 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-foreground mb-2">1. Service description</h2>
           <p>
             Resu-Dog is an AI-powered tool that optimizes resumes for ATS compatibility, generates cover letters,
-            produces skills gap analyses, and creates shareable profile pages. The service uses OpenAI&apos;s GPT-4o
-            model to process your content.
+            produces skills gap analyses, and creates shareable profile pages. The service uses {ai.service} to
+            process your content; see the Privacy Policy for how it treats your data.
           </p>
         </section>
 
@@ -63,7 +65,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-foreground mb-2">6. Service availability</h2>
           <p>
             We aim to keep Resu-Dog available at all times but do not guarantee uptime. The service depends on
-            third-party APIs (OpenAI, Vercel) and may be temporarily unavailable due to maintenance or outages
+            third-party APIs ({ai.company}, Upstash, Vercel) and may be temporarily unavailable due to maintenance or outages
             beyond our control.
           </p>
         </section>

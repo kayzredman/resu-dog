@@ -95,6 +95,8 @@ export interface ProfileData {
   email: string | null;
   linkedin: string | null;
   summary: string;
+  /** A short first-person "About me" written from the resume; the user can edit it */
+  story?: string;
   years_experience: number;
   industries: string[];
   skills: string[];

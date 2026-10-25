@@ -12,10 +12,28 @@ jobs:
   deploy-preview:
     name: Deploy Preview to Vercel
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
+      # Until the Vercel secrets are added (repo Settings → Secrets and variables → Actions),
+      # skip the deploy with a note instead of failing every push
+      - name: Check Vercel secrets
+        id: vercel
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy skipped: add VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID to the repo's Actions secrets."
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.vercel.outputs.ready == 'true'
 
       - name: Setup Node.js
+        if: steps.vercel.outputs.ready == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -23,16 +41,20 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Vercel CLI
+        if: steps.vercel.outputs.ready == 'true'
         run: npm install -g vercel@latest
 
       - name: Pull Vercel Environment (Preview)
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel.outputs.ready == 'true'
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
         working-directory: frontend
 
       - name: Build Project (Preview)
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel.outputs.ready == 'true'
+        run: vercel build --token="$VERCEL_TOKEN"
         working-directory: frontend
 
       - name: Deploy to Vercel (Preview)
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel.outputs.ready == 'true'
+        run: vercel deploy --prebuilt --token="$VERCEL_TOKEN"
         working-directory: frontend

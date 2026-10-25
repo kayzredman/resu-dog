@@ -299,10 +299,25 @@ International formats (LinkedIn, Canada/WES, UK) and the shareable profile are n
 **Still to do before launch**
 - [ ] Payments: subscription check in `usePro()` and `requirePro()`.
 - [ ] Upstash Redis in production, so profiles persist.
-- [ ] Privacy policy and the app's About still name OpenAI; update them for the provider chosen at launch.
-- [ ] Profile "blog"/story section: the profile summary is the write-up for now.
+- [x] Privacy policy and terms now describe the provider the server really uses (`AI_PROVIDER`), with Gemini's free-tier terms stated plainly until `GEMINI_PAID_TIER=true`. The app's About points to the policy instead of naming a provider.
+- [x] "My story": a short first-person About me written only from the resume (honesty-checked), editable in the app before publishing, shown on the public page.
 
 ## One brand — 2026-10-25
 
 The app now uses the website's look: violet `#5B52F0` on dark `#0A0A0F`, teal `#00D4AA` for positive states, and the same paw mark (Lucide paw-print on `#6C63FF`). The app runs in dark mode like the site (native controls included). Every text pair still meets WCAG AA; secondary buttons use the lighter violet `#8B84FF` so they stay readable on dark. The template Expo icon has been replaced with the paw for iOS, Android (adaptive + monochrome), splash and favicon. Icons show on a real install or development build; Expo Go always shows its own icon.
 - [ ] Before launch: a custom paw mark, so the logo isn't a stock icon.
+
+## Open items — status 2026-10-25
+
+Done in code:
+- [x] Deploy workflows skip with a note until the Vercel secrets exist, instead of failing every push.
+- [x] Just polish re-tested with real AI: no bracket talk when the final resume has none.
+
+Needs you (accounts and decisions):
+- [ ] GitHub billing lock: fix payment at github.com/settings/billing; CI can't run until then.
+- [ ] Vercel secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` in the repo's Actions secrets.
+- [ ] Upstash Redis for production: `KV_REST_API_URL`, `KV_REST_API_TOKEN` in Vercel (profiles and rate limits).
+- [ ] Gemini paid tier before launch, then `GEMINI_PAID_TIER=true` (and redeploy, since the privacy page is built at deploy time).
+- [ ] Payments: choose how Pro is sold, then wire `usePro()` / `requirePro()`.
+- [ ] A custom paw mark.
+- [ ] One check on a real phone (the simulator sometimes needs a second tap).
