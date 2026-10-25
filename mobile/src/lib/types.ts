@@ -73,3 +73,46 @@ export interface PickedFile {
   mimeType: string;
   size?: number;
 }
+
+// ─── Pro: international formats and shareable profile ───────────────────────
+
+export type ExportFormat = 'linkedin' | 'wes' | 'uk';
+
+export interface ExportResult {
+  formatted?: string;
+  notes?: string[];
+  // LinkedIn only
+  headline?: string;
+  about?: string;
+  skills?: string[];
+  recommendation_requests?: { target: string; template: string }[];
+}
+
+export interface ProfileData {
+  name: string;
+  title: string;
+  location: string | null;
+  email: string | null;
+  linkedin: string | null;
+  summary: string;
+  years_experience: number;
+  industries: string[];
+  skills: string[];
+  experience: { title: string; company: string; period: string; bullets: string[] }[];
+  education: { degree: string; institution: string; year: string }[];
+  certifications: string[];
+}
+
+export interface PublishOptions {
+  showEmail: boolean;
+  allowCvDownload: boolean;
+  openToWork: boolean;
+}
+
+export interface PublishedProfile {
+  slug: string;
+  url: string;
+  deleteToken: string;
+  name: string;
+  publishedAt: string;
+}

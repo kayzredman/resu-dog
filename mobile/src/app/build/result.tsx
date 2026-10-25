@@ -6,7 +6,7 @@ import { Screen, T, useScrollToTop } from '@/components/ui';
 import { useSession } from '@/lib/session';
 
 export default function BuildResultScreen() {
-  const { buildResult: result } = useSession();
+  const { buildResult: result, setProResume } = useSession();
   const { ref: scrollRef, scrollToTop } = useScrollToTop();
 
   if (!result) {
@@ -26,6 +26,10 @@ export default function BuildResultScreen() {
         assessment={result.assessment}
         resume={result.resume}
         onSectionChange={scrollToTop}
+        onOpenPro={(screen, resume) => {
+          setProResume(resume);
+          router.push(`/build/${screen}`);
+        }}
         changes={result.improvements_applied ?? []}
       />
     </Screen>

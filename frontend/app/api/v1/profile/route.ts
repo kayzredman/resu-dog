@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
+import { requirePro } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/v1/profile
@@ -8,6 +9,9 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    const locked = requirePro();
+    if (locked) return locked;
+
     const limited = await rateLimit(req, "ai-light");
     if (limited) return limited;
 

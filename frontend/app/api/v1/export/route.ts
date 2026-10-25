@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
 import { verifyClaims } from "@/lib/claim-guard";
-import { NO_FABRICATION_RULES, stripInventedContacts } from "@/lib/prompt-rules";
+import { NO_FABRICATION_RULES, PLACEHOLDER_PATTERN, stripInventedContacts, stripNewPlaceholders } from "@/lib/prompt-rules";
+import { requirePro } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/v1/export
@@ -81,6 +82,9 @@ UK CV rules to apply:
 
 export async function POST(req: NextRequest) {
   try {
+    const locked = requirePro();
+    if (locked) return locked;
+
     const limited = await rateLimit(req, "ai-light");
     if (limited) return limited;
 
@@ -102,13 +106,27 @@ export async function POST(req: NextRequest) {
     }
 
     const res = (await generateJSON(
-      `${FORMAT_PROMPTS[format]}\n\nReformat only. A new format is no reason to add claims: no new strengths, traits, results or goals the resume doesn't state.\n\n${NO_FABRICATION_RULES}\n\nRESUME:\n${resume}`,
+      `${FORMAT_PROMPTS[format]}\n\nReformat only. A new format is no reason to add claims: no new strengths, traits, results or goals the resume doesn't state. Do not add new [placeholder] brackets; keep only the ones already in the resume.\n\n${NO_FABRICATION_RULES}\n\nRESUME:\n${resume}`,
       { temperature: 0.3 }
     )) as Record<string, unknown>;
+
+    // Reformatting adds no new [blanks]: keep exactly the ones the resume already has
+    for (const field of ["formatted", "about", "headline"] as const) {
+      if (typeof res[field] === "string") res[field] = stripNewPlaceholders(res[field] as string, resume);
+    }
+    const hasPlaceholders = PLACEHOLDER_PATTERN.test(resume);
+    PLACEHOLDER_PATTERN.lastIndex = 0;
+    if (!hasPlaceholders && Array.isArray(res.notes)) {
+      res.notes = (res.notes as unknown[]).filter((n) => typeof n === "string" && !/placeholder|\[/i.test(n));
+    }
 
     // Same honesty check as the resume itself
     if (typeof res.formatted === "string") {
       res.formatted = (await verifyClaims(stripInventedContacts(res.formatted, resume), resume, { kind: "profile" })).text;
+    }
+    // The LinkedIn About is shown and copied on its own, so it gets the same check
+    if (typeof res.about === "string") {
+      res.about = (await verifyClaims(stripInventedContacts(res.about, resume), resume, { kind: "profile" })).text;
     }
     return NextResponse.json(res);
   } catch (err: unknown) {

@@ -3,11 +3,13 @@ import * as WebBrowser from 'expo-web-browser';
 import { View } from 'react-native';
 
 import { NativeButton, NativeIcon } from '@/components/native';
+import { PublishedCard } from '@/components/profile-screen';
 import { Card, Screen, T } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getApiBaseUrl } from '@/lib/api';
 import { useIntro } from '@/lib/intro';
+import { usePublished } from '@/lib/published';
 
 const PROMISES = [
   'No invented skills, numbers or jobs — ever.',
@@ -31,9 +33,13 @@ export default function AboutScreen() {
   const c = useTheme();
   const base = getApiBaseUrl();
   const { replay } = useIntro();
+  const { published } = usePublished();
 
   return (
     <Screen>
+      {/* The only place to manage a live profile once the results are gone */}
+      {published ? <PublishedCard published={published} /> : null}
+
       <Card>
         <T variant="title">Our promise</T>
         {PROMISES.map((p) => (

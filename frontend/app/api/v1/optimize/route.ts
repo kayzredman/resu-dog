@@ -203,8 +203,32 @@ function withoutRemoved(changes: string[], removed: string[], finalResume: strin
   return changes.filter(
     (c) =>
       !removed.some((t) => hasTerm(c, t)) &&
-      (hasPlaceholders || !/placeholder|bracket|\[[^\]]*\]/i.test(c))
+      (hasPlaceholders || !mentionsPlaceholders(c))
   );
+}
+
+const mentionsPlaceholders = (t: string) => /placeholder|bracket|\[[^\]]*\]/i.test(t);
+
+/**
+ * The assessment reviews the draft before the final rewrite. If the final resume has no
+ * [placeholders] left, drop the advice that's about them, so we never mention brackets the
+ * user can't see.
+ */
+function withoutStalePlaceholderAdvice(assessment: unknown, finalResume: string): unknown {
+  if (!assessment || typeof assessment !== "object") return assessment;
+  if ((finalResume.match(PLACEHOLDER_PATTERN) ?? []).length > 0) return assessment;
+  const a = { ...(assessment as Record<string, unknown>) };
+  for (const key of ["critical_gaps", "quick_wins", "red_flags", "strengths"]) {
+    if (Array.isArray(a[key])) a[key] = (a[key] as unknown[]).filter((x) => typeof x !== "string" || !mentionsPlaceholders(x));
+  }
+  if (typeof a.probability_rationale === "string" && mentionsPlaceholders(a.probability_rationale)) {
+    // Keep the sentences that don't mention them
+    a.probability_rationale = (a.probability_rationale as string)
+      .split(/(?<=[.!?])\s+/)
+      .filter((sentence) => !mentionsPlaceholders(sentence))
+      .join(" ");
+  }
+  return a;
 }
 
 // ─── Shortlist assessment ─────────────────────────────────────────────────────
@@ -547,7 +571,7 @@ export async function POST(req: NextRequest) {
         ),
         keywords_added: [],
         cover_letter: "",
-        assessment,
+        assessment: withoutStalePlaceholderAdvice(assessment, finalResume),
       });
     }
 
@@ -615,7 +639,7 @@ export async function POST(req: NextRequest) {
       // Only keywords the candidate genuinely has
       keywords_added: ((optTargeted.keywords_added as string[]) ?? []).filter((k) => supports(resumeText, k)),
       cover_letter: coverLetter,
-      assessment,
+      assessment: withoutStalePlaceholderAdvice(assessment, finalResume),
     });
   } catch (err: unknown) {
     console.error("[optimize route]", err);

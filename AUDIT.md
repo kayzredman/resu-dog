@@ -278,3 +278,26 @@ _Checked in the browser at 375×812 (phone) and desktop, against Apple's Human I
 - Small embellishments can still slip through occasionally (e.g. "guiding them in best practices").
 - On the free tier, runs take about 45–90 seconds and sometimes fall back to a "lite" model.
 - Re-test with a paid or stronger model before launch.
+
+## Pro features — 2026-10-25 (beta: free for everyone)
+
+International formats (LinkedIn, Canada/WES, UK) and the shareable profile are now in the phone app, behind one Pro switch.
+
+**The switch**
+- Server: `PRO_FEATURES_UNLOCKED` (default on). Set it to `false` once payments are live, and `/api/v1/export`, `/api/v1/profile` and publishing return `402 pro_required`. Taking a profile down is never gated.
+- App: `EXPO_PUBLIC_PRO_UNLOCKED` (default on) and `usePro()` in `mobile/src/lib/entitlements.ts`. The purchase check plugs in there (marked `TODO(payments)`). When locked, the screens show a "part of Pro" card instead.
+
+**What was checked (fictional sample resumes)**
+- [x] WES and LinkedIn exports run through the honesty checks; reformatting no longer adds new `[X%]` blanks, and the LinkedIn About gets the same check as the CV.
+- [x] Profile: build → preview → choose what to share → publish → public page → take down (link then returns 404). Email stays hidden unless chosen; turning on CV download says the CV includes contact details.
+- [x] Only one live profile per phone; the About tab shows it so it can be shared or taken down after the results are gone.
+- [x] Local dev works without Upstash: profiles use an in-memory store (lost on restart). Production still needs `KV_REST_API_URL` / `KV_REST_API_TOKEN`.
+
+**Also fixed**
+- [x] Just polish: the review was written on the draft before the final rewrite, so it could mention `[result]` blanks the final resume no longer had. That advice is now dropped when no blanks remain.
+
+**Still to do before launch**
+- [ ] Payments: subscription check in `usePro()` and `requirePro()`.
+- [ ] Upstash Redis in production, so profiles persist.
+- [ ] Privacy policy and the app's About still name OpenAI; update them for the provider chosen at launch.
+- [ ] Profile "blog"/story section: the profile summary is the write-up for now.

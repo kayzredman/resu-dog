@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getRedis, profileKey } from "@/lib/redis";
+import { getProfileStore, profileKey } from "@/lib/redis";
 import type { StoredProfile } from "@/lib/profile";
 import PublicProfileClient from "./client";
 
@@ -16,7 +16,7 @@ interface PageProps {
 
 async function getStoredProfile(slug: string): Promise<StoredProfile | null> {
   try {
-    const redis = getRedis();
+    const redis = getProfileStore();
     const raw = await redis.get<string | StoredProfile>(profileKey(slug));
     if (!raw) return null;
     // Upstash may return parsed object or string depending on how it was stored
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const data = await getStoredProfile(slug);
 
   if (!data) {
-    return { title: "Profile Not Found — Resu-Dog", robots: { index: false, follow: false } };
+    return { title: "Profile Not Found", robots: { index: false, follow: false } };
   }
 
   const { name, title, summary } = data.profile;
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : `${name} — ${title}. View their professional profile on Resu-Dog.`;
 
   return {
-    title: `${name} — ${title} | Resu-Dog`,
+    title: `${name} — ${title}`,
     description: desc,
     // Shared profiles contain personal details: keep them out of search engines
     robots: { index: false, follow: false, nocache: true },

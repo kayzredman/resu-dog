@@ -7,7 +7,7 @@ import { fillMaxWidth, height as composeHeight } from '@expo/ui/jetpack-compose/
 import { Text as SwiftText } from '@expo/ui/swift-ui';
 import { controlSize, frame } from '@expo/ui/swift-ui/modifiers';
 import * as Haptics from 'expo-haptics';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { MinTouch } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,6 +30,12 @@ export const Icons = {
   target: Icon.select({ ios: 'scope', android: import('@expo/material-symbols/tune.xml') }),
   verified: Icon.select({ ios: 'checkmark.seal', android: import('@expo/material-symbols/verified.xml') }),
   lock: Icon.select({ ios: 'lock', android: import('@expo/material-symbols/lock.xml') }),
+  globe: Icon.select({ ios: 'globe', android: import('@expo/material-symbols/language.xml') }),
+  profile: Icon.select({ ios: 'person.crop.circle', android: import('@expo/material-symbols/person.xml') }),
+  share: Icon.select({ ios: 'square.and.arrow.up', android: import('@expo/material-symbols/share.xml') }),
+  copy: Icon.select({ ios: 'doc.on.doc', android: import('@expo/material-symbols/content_copy.xml') }),
+  open: Icon.select({ ios: 'safari', android: import('@expo/material-symbols/open_in_new.xml') }),
+  pro: Icon.select({ ios: 'star.circle.fill', android: import('@expo/material-symbols/workspace_premium.xml') }),
 };
 
 export type IconKey = keyof typeof Icons;
@@ -143,6 +149,35 @@ export function Segmented<V extends string>({
   );
 }
 
+// ─── Switch ──────────────────────────────────────────────────────────────────
+
+/**
+ * The system switch (UISwitch / Material) with its label; the whole row toggles it.
+ * React Native's own Switch: SwiftUI toggles inside a scroll view could miss taps.
+ */
+export function NativeSwitch({ label, value, onValueChange }: { label: string; value: boolean; onValueChange: (v: boolean) => void }) {
+  const c = useTheme();
+  const toggle = (v: boolean) => {
+    Haptics.selectionAsync().catch(() => {});
+    onValueChange(v);
+  };
+  return (
+    <Pressable
+      accessible={false}
+      onPress={() => toggle(!value)}
+      style={styles.switchRow}>
+      <Text style={[styles.switchLabel, { color: c.text }]}>{label}</Text>
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        onValueChange={toggle}
+        trackColor={{ true: c.primary, false: c.lineStrong }}
+        thumbColor={Platform.OS === 'android' ? (value ? c.onPrimary : c.surface) : undefined}
+      />
+    </Pressable>
+  );
+}
+
 // ─── Bottom sheet with simple native content ─────────────────────────────────
 
 export interface SheetSection {
@@ -187,4 +222,6 @@ const styles = StyleSheet.create({
   fullWidth: { alignSelf: 'stretch' },
   loading: { minHeight: MinTouch + 4, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   segmented: { minHeight: 36 },
+  switchRow: { minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  switchLabel: { flex: 1, fontSize: 17, lineHeight: 22 },
 });

@@ -9,6 +9,8 @@ export default function BuildStack() {
       <Stack.Screen name="index" options={{ title: 'Build a CV' }} />
       <Stack.Screen name="questions" options={{ title: 'Your experience', headerLargeTitle: false }} />
       <Stack.Screen name="result" options={{ title: 'Your new CV', headerLargeTitle: false }} />
+      <Stack.Screen name="formats" options={{ title: 'International formats', headerLargeTitle: false }} />
+      <Stack.Screen name="profile" options={{ title: 'Shareable profile', headerLargeTitle: false }} />
     </Stack>
   );
 }

@@ -6,7 +6,7 @@ import { Screen, T, useScrollToTop } from '@/components/ui';
 import { useSession } from '@/lib/session';
 
 export default function ResultsScreen() {
-  const { optimizeResult: result } = useSession();
+  const { optimizeResult: result, setProResume } = useSession();
   const { ref: scrollRef, scrollToTop } = useScrollToTop();
 
   if (!result) {
@@ -29,6 +29,10 @@ export default function ResultsScreen() {
         resume={result.optimized_resume}
         coverLetter={result.cover_letter}
         onSectionChange={scrollToTop}
+        onOpenPro={(screen, resume) => {
+          setProResume(resume);
+          router.push(`/${screen}`);
+        }}
         changes={result.changes_made}
       />
     </Screen>

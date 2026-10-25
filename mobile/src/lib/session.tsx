@@ -17,6 +17,10 @@ interface Session {
   setBuildAnswers: (updater: (prev: Record<string, string>) => Record<string, string>) => void;
   buildResult: BuildResult | null;
   setBuildResult: (r: BuildResult | null) => void;
+
+  /** The resume (with the user's edits) that the Pro screens work from. */
+  proResume: string;
+  setProResume: (resume: string) => void;
 }
 
 const SessionContext = createContext<Session | null>(null);
@@ -27,6 +31,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [buildAnalysis, setBuildAnalysis] = useState<BuildAnalysis | null>(null);
   const [buildAnswers, setBuildAnswersState] = useState<Record<string, string>>({});
   const [buildResult, setBuildResult] = useState<BuildResult | null>(null);
+  const [proResume, setProResume] = useState('');
 
   const value = useMemo<Session>(
     () => ({
@@ -40,8 +45,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setBuildAnswers: (updater) => setBuildAnswersState(updater),
       buildResult,
       setBuildResult,
+      proResume,
+      setProResume,
     }),
-    [optimizeResult, buildJobDescription, buildAnalysis, buildAnswers, buildResult]
+    [optimizeResult, buildJobDescription, buildAnalysis, buildAnswers, buildResult, proResume]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

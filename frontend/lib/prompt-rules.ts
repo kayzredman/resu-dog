@@ -56,3 +56,18 @@ export function stripInventedContacts(output: string, source: string): string {
     )
     .join("\n");
 }
+
+/**
+ * For reformatting (not rewriting): removes [placeholders] the source didn't have, along
+ * with the "by"/"to" that introduces them, e.g. "improving reliability by [X%]." → "improving reliability."
+ */
+export function stripNewPlaceholders(output: string, source: string): string {
+  const known = new Set(source.match(PLACEHOLDER_PATTERN) ?? []);
+  return output
+    .replace(/(\s*,?\s+(?:by|to|of|for|at|with|from|saving|reaching|serving)?\s*)(\[[^\[\]\n]{1,40}\])/gi, (m, _lead, ph) =>
+      known.has(ph) ? m : ""
+    )
+    .replace(/(\[[^\[\]\n]{1,40}\])/g, (ph) => (known.has(ph) ? ph : ""))
+    .replace(/[ \t]+([.,;])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ");
+}

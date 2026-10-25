@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { InfoSheet, NativeButton, NativeIcon, Segmented } from '@/components/native';
+import { ProCard } from '@/components/pro';
 import { Bullets, Card, Notice, Pill, T, TextAction } from '@/components/ui';
 import { BodySize, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,6 +26,8 @@ export interface ResultsViewProps {
   changes: string[];
   /** Called when the visible section changes, so the screen can scroll back to the top. */
   onSectionChange?: () => void;
+  /** Opens a Pro screen with the resume as it is now, edits included. */
+  onOpenPro?: (screen: 'formats' | 'profile', resume: string) => void;
 }
 
 // Honest, outcome-free wording: this is a read of the paper, not a hiring prediction
@@ -60,7 +63,7 @@ const SCORING_SECTIONS_POLISH = [
   { heading: 'Want a match score?', body: 'Switch to “For a job” and paste a job description to see how well you fit a specific role.' },
 ];
 
-export function ResultsView({ mode, scoreBefore, scoreAfter, assessment, resume: initialResume, coverLetter, changes, onSectionChange }: ResultsViewProps) {
+export function ResultsView({ mode, scoreBefore, scoreAfter, assessment, resume: initialResume, coverLetter, changes, onSectionChange, onOpenPro }: ResultsViewProps) {
   const c = useTheme();
   const [segment, setSegment] = useState<Segment>('overview');
 
@@ -155,6 +158,7 @@ export function ResultsView({ mode, scoreBefore, scoreAfter, assessment, resume:
           {mode === 'targeted' && assessment?.skills_heatmap?.length ? <SkillsCard assessment={assessment} /> : null}
           <BreakdownCard mode={mode} score={scoreAfter} onExplain={() => setScoringOpen(true)} />
           {assessment ? <ReviewCard mode={mode} assessment={assessment} /> : null}
+          {onOpenPro ? <ProCard onFormats={() => onOpenPro('formats', resume)} onProfile={() => onOpenPro('profile', resume)} /> : null}
         </>
       )}
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { getRedis, profileKey } from "@/lib/redis";
+import { getProfileStore, profileKey } from "@/lib/redis";
 import { sanitizeProfile, type StoredProfile } from "@/lib/profile";
+import { requirePro } from "@/lib/entitlements";
 import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/v1/profile/publish
@@ -18,6 +19,9 @@ const TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
 export async function POST(req: NextRequest) {
   try {
+    const locked = requirePro();
+    if (locked) return locked;
+
     const limited = await rateLimit(req, "publish");
     if (limited) return limited;
 
@@ -58,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     const slug = nanoid(10); // short, URL-safe ID
     const deleteToken = nanoid(32);
-    const redis = getRedis();
+    const redis = getProfileStore();
 
     const stored: StoredProfile = {
       profile,
@@ -99,7 +103,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ detail: "Invalid request." }, { status: 400 });
     }
 
-    const redis = getRedis();
+    const redis = getProfileStore();
     const raw = await redis.get<string | StoredProfile>(profileKey(slug));
     if (!raw) {
       // Already gone (expired or deleted) — treat as success

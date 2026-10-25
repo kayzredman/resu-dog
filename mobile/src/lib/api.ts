@@ -8,9 +8,13 @@ import type {
   BuildAnalysis,
   BuildQuestion,
   BuildResult,
+  ExportFormat,
+  ExportResult,
   Mode,
   OptimizeResult,
   PickedFile,
+  ProfileData,
+  PublishOptions,
 } from '@/lib/types';
 
 const DEV_API_PORT = 3000;
@@ -36,7 +40,10 @@ export function getApiBaseUrl(): string | null {
   return null;
 }
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  /** Machine-readable reason from the server, e.g. "pro_required". */
+  code?: string;
+}
 
 async function request<T>(path: string, init: RequestInit, timeoutMs: number): Promise<T> {
   const base = getApiBaseUrl();
@@ -60,9 +67,11 @@ async function request<T>(path: string, init: RequestInit, timeoutMs: number): P
     clearTimeout(timer);
   }
 
-  const data = (await res.json().catch(() => ({}))) as { detail?: string };
+  const data = (await res.json().catch(() => ({}))) as { detail?: string; code?: string };
   if (!res.ok) {
-    throw new ApiError(data.detail ?? `Something went wrong (${res.status}). Please try again.`);
+    const error = new ApiError(data.detail ?? `Something went wrong (${res.status}). Please try again.`);
+    error.code = data.code;
+    throw error;
   }
   return data as T;
 }
@@ -112,10 +121,31 @@ export function writeCv(jobDescription: string, answers: Record<string, string>,
   );
 }
 
-// ─── Export formats ──────────────────────────────────────────────────────────
-
-export type ExportFormat = 'linkedin' | 'wes' | 'uk';
+// ─── Pro: export formats ─────────────────────────────────────────────────────
 
 export function exportResume(resume: string, format: ExportFormat) {
-  return postJson<{ formatted?: string; about?: string }>('/api/v1/export', { resume, format });
+  // One AI call plus the honesty check
+  return postJson<ExportResult>('/api/v1/export', { resume, format }, LONG_TIMEOUT_MS);
+}
+
+// ─── Pro: shareable profile ──────────────────────────────────────────────────
+
+export function extractProfile(resume: string) {
+  return postJson<ProfileData>('/api/v1/profile', { resume }, LONG_TIMEOUT_MS);
+}
+
+export function publishProfile(profile: ProfileData, resume: string, options: PublishOptions) {
+  return postJson<{ slug: string; url: string; deleteToken: string }>('/api/v1/profile/publish', {
+    profile,
+    resume: options.allowCvDownload ? resume : undefined,
+    options,
+  });
+}
+
+export function unpublishProfile(slug: string, deleteToken: string) {
+  return request<{ deleted: boolean }>(
+    '/api/v1/profile/publish',
+    { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, deleteToken }) },
+    SHORT_TIMEOUT_MS
+  );
 }
