@@ -28,7 +28,9 @@ export default function BuildResultScreen() {
         onSectionChange={scrollToTop}
         onOpenPro={(screen, resume) => {
           setProResume(resume);
-          router.push(`/build/${screen}`);
+          // The profile lives in its own tab; formats open on top of the results
+          if (screen === 'profile') router.navigate('/profile');
+          else router.push('/build/formats');
         }}
         changes={result.improvements_applied ?? []}
       />

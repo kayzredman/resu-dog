@@ -290,7 +290,7 @@ International formats (LinkedIn, Canada/WES, UK) and the shareable profile are n
 **What was checked (fictional sample resumes)**
 - [x] WES and LinkedIn exports run through the honesty checks; reformatting no longer adds new `[X%]` blanks, and the LinkedIn About gets the same check as the CV.
 - [x] Profile: build → preview → choose what to share → publish → public page → take down (link then returns 404). Email stays hidden unless chosen; turning on CV download says the CV includes contact details.
-- [x] Only one live profile per phone; the About tab shows it so it can be shared or taken down after the results are gone.
+- [x] A Profile tab (beside Optimize, Build CV and About) is the profile’s home: it uses the latest resume from this session, and shows the live profile to share or take down. One live profile per phone.
 - [x] Local dev works without Upstash: profiles use an in-memory store (lost on restart). Production still needs `KV_REST_API_URL` / `KV_REST_API_TOKEN`.
 
 **Also fixed**

@@ -31,7 +31,9 @@ export default function ResultsScreen() {
         onSectionChange={scrollToTop}
         onOpenPro={(screen, resume) => {
           setProResume(resume);
-          router.push(`/${screen}`);
+          // The profile lives in its own tab; formats open on top of the results
+          if (screen === 'profile') router.navigate('/profile');
+          else router.push('/formats');
         }}
         changes={result.changes_made}
       />

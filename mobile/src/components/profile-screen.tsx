@@ -22,7 +22,9 @@ import { useSession } from '@/lib/session';
 import type { ProfileData, PublishedProfile, PublishOptions } from '@/lib/types';
 
 export default function ProfileScreen() {
-  const { proResume } = useSession();
+  const { proResume: chosen, optimizeResult, buildResult } = useSession();
+  // From the results' "Take it further", or else the latest resume made in this session
+  const proResume = chosen || optimizeResult?.optimized_resume || buildResult?.resume || '';
   const { unlocked } = usePro();
   const { published, loaded } = usePublished();
 
@@ -32,7 +34,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState('');
   const [replacing, setReplacing] = useState(false);
 
-  if (!unlocked) return <Screen><ProLocked feature="The shareable profile" onBack={() => router.back()} /></Screen>;
+  if (!unlocked) return <Screen><ProLocked feature="The shareable profile" onBack={() => router.navigate('/')} /></Screen>;
   if (!loaded) return null;
 
   if (working === 'reading') {
@@ -58,8 +60,13 @@ export default function ProfileScreen() {
   if (!proResume) {
     return (
       <Screen>
-        <T tone="muted">Open your results first, then come back here to make your profile.</T>
-        <NativeButton label="Back" onPress={() => router.back()} />
+        <Intro />
+        <Card>
+          <T variant="heading">Start with your resume</T>
+          <T tone="muted">Your profile is made from a resume you’ve polished or built here. Do that first, then come back.</T>
+          <NativeButton label="Polish my resume" onPress={() => router.navigate('/')} />
+          <NativeButton label="Build a CV" variant="outlined" onPress={() => router.navigate('/build')} />
+        </Card>
       </Screen>
     );
   }
@@ -101,15 +108,7 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <Screen>
-        <View style={{ flexDirection: 'row' }}>
-          <ProPill />
-        </View>
-        <View style={{ gap: Spacing.sm }}>
-          <T variant="title" style={{ fontSize: 26, lineHeight: 31 }}>Your profile, one link away.</T>
-          <T tone="muted">
-            A clean public page of your experience, skills and education, made from your resume. Send the link to recruiters, referees or anyone who asks for your CV.
-          </T>
-        </View>
+        <Intro />
         <Card>
           <Bullets
             tone="soft"
@@ -129,7 +128,13 @@ export default function ProfileScreen() {
           onPress={read}
           disabled={placeholders > 0}
         />
-        {placeholders > 0 ? <NativeButton label="Back to my resume" variant="outlined" onPress={() => router.back()} /> : null}
+        {placeholders > 0 ? (
+          <NativeButton
+            label="Fill them in"
+            variant="outlined"
+            onPress={() => router.navigate(buildResult && proResume === buildResult.resume ? '/build/result' : '/results')}
+          />
+        ) : null}
         {replacing ? <NativeButton label="Keep my current profile" variant="text" onPress={() => setReplacing(false)} /> : null}
       </Screen>
     );
@@ -158,6 +163,22 @@ export default function ProfileScreen() {
       <NativeButton label="Publish my profile" onPress={publish} loading={working === 'publishing'} />
       <NativeButton label="Start again" variant="text" onPress={() => setProfile(null)} />
     </Screen>
+  );
+}
+
+function Intro() {
+  return (
+    <>
+      <View style={{ flexDirection: 'row' }}>
+        <ProPill />
+      </View>
+      <View style={{ gap: Spacing.sm }}>
+        <T variant="title" style={{ fontSize: 26, lineHeight: 31 }}>Your profile, one link away.</T>
+        <T tone="muted">
+          A clean public page of your experience, skills and education, made from your resume. Send the link to recruiters, referees or anyone who asks for your CV.
+        </T>
+      </View>
+    </>
   );
 }
 
@@ -221,8 +242,8 @@ function ProfilePreview({ profile, options }: { profile: ProfileData; options: P
   );
 }
 
-/** The live profile: share, open, copy or take it down. Also used from the About tab. */
-export function PublishedCard({ published }: { published: PublishedProfile }) {
+/** The live profile: share, open, copy or take it down. */
+function PublishedCard({ published }: { published: PublishedProfile }) {
   const [removing, setRemoving] = useState(false);
 
   const takeDown = () =>

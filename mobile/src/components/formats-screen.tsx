@@ -26,7 +26,8 @@ const FORMATS: { value: ExportFormat; label: string; intro: string }[] = [
 ];
 
 export default function FormatsScreen() {
-  const { proResume } = useSession();
+  const { proResume: chosen, optimizeResult, buildResult } = useSession();
+  const proResume = chosen || optimizeResult?.optimized_resume || buildResult?.resume || '';
   const { unlocked } = usePro();
   const [format, setFormat] = useState<ExportFormat>('linkedin');
   const [results, setResults] = useState<Partial<Record<ExportFormat, ExportResult>>>({});

@@ -49,6 +49,10 @@ function App() {
             <NativeTabs.Trigger.Label>Build CV</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon sf="square.and.pencil" md="edit_note" />
           </NativeTabs.Trigger>
+          <NativeTabs.Trigger name="profile">
+            <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }} md="account_circle" />
+          </NativeTabs.Trigger>
           <NativeTabs.Trigger name="about">
             <NativeTabs.Trigger.Label>About</NativeTabs.Trigger.Label>
             <NativeTabs.Trigger.Icon sf={{ default: 'info.circle', selected: 'info.circle.fill' }} md="info" />

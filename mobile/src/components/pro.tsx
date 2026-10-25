@@ -33,7 +33,7 @@ export function ProLocked({ feature, onBack }: { feature: string; onBack: () => 
       <Pill icon="lock" label="Resu-Dog Pro" tone="neutral" />
       <T variant="title" style={{ textAlign: 'center' }}>{feature} is part of Pro</T>
       <T tone="muted" style={{ textAlign: 'center' }}>Pro includes {PRO_FEATURES.join(' and ').toLowerCase()}.</T>
-      <NativeButton label="Back to my results" variant="outlined" onPress={onBack} />
+      <NativeButton label="Go back" variant="outlined" onPress={onBack} />
     </Card>
   );
 }
