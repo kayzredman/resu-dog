@@ -14,21 +14,21 @@ interface GapAnalysisProps {
 
 const STATUS_CONFIG = {
   matched: {
-    pill: "bg-[#22c55e]/10 border border-[#22c55e]/25 text-[#22c55e]",
+    pill: "bg-success/10 border border-success/25 text-success",
     icon: CheckCircle2,
-    iconColor: "text-[#22c55e]",
+    iconColor: "text-success",
     label: "Matched",
   },
   transferable: {
-    pill: "bg-[#f59e0b]/10 border border-[#f59e0b]/25 text-[#f59e0b]",
+    pill: "bg-warning/10 border border-warning/25 text-warning",
     icon: ArrowRightLeft,
-    iconColor: "text-[#f59e0b]",
+    iconColor: "text-warning",
     label: "Transferable",
   },
   gap: {
-    pill: "bg-[#ef4444]/10 border border-[#ef4444]/25 text-[#ef4444]",
+    pill: "bg-danger/10 border border-danger/25 text-danger",
     icon: XCircle,
-    iconColor: "text-[#ef4444]",
+    iconColor: "text-danger",
     label: "Gap",
   },
 };
@@ -52,23 +52,23 @@ export default function GapAnalysis({ skillsHeatmap, transferableBridges, gapRoa
       >
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <GitBranch className="h-4 w-4 text-primary shrink-0" />
+            <GitBranch className="h-4 w-4 text-primary-ink shrink-0" />
             <span className="font-semibold text-sm">Skills Gap Analysis</span>
           </div>
           {/* Summary pills */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="flex items-center gap-1 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 px-2.5 py-0.5 text-[11px] font-semibold text-[#22c55e]">
+            <span className="flex items-center gap-1 rounded-full bg-success/10 border border-success/20 px-2.5 py-0.5 text-[11px] font-semibold text-success">
               <CheckCircle2 className="h-3 w-3" />
               {matched.length} matched
             </span>
             {transferable.length > 0 && (
-              <span className="flex items-center gap-1 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/20 px-2.5 py-0.5 text-[11px] font-semibold text-[#f59e0b]">
+              <span className="flex items-center gap-1 rounded-full bg-warning/10 border border-warning/20 px-2.5 py-0.5 text-[11px] font-semibold text-warning">
                 <ArrowRightLeft className="h-3 w-3" />
                 {transferable.length} transferable
               </span>
             )}
             {gaps.length > 0 && (
-              <span className="flex items-center gap-1 rounded-full bg-[#ef4444]/10 border border-[#ef4444]/20 px-2.5 py-0.5 text-[11px] font-semibold text-[#ef4444]">
+              <span className="flex items-center gap-1 rounded-full bg-danger/10 border border-danger/20 px-2.5 py-0.5 text-[11px] font-semibold text-danger">
                 <XCircle className="h-3 w-3" />
                 {gaps.length} {gaps.length === 1 ? "gap" : "gaps"}
               </span>
@@ -118,9 +118,9 @@ export default function GapAnalysis({ skillsHeatmap, transferableBridges, gapRoa
                 </div>
                 {/* Legend */}
                 <div className="mt-3 flex flex-wrap gap-4 text-[11px] text-foreground-muted">
-                  <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-[#22c55e]" /> Matched — present in your resume</span>
-                  <span className="flex items-center gap-1.5"><ArrowRightLeft className="h-3 w-3 text-[#f59e0b]" /> Transferable — adjacent experience exists</span>
-                  <span className="flex items-center gap-1.5"><XCircle className="h-3 w-3 text-[#ef4444]" /> Gap — genuinely missing</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-success" /> Matched — present in your resume</span>
+                  <span className="flex items-center gap-1.5"><ArrowRightLeft className="h-3 w-3 text-warning" /> Transferable — adjacent experience exists</span>
+                  <span className="flex items-center gap-1.5"><XCircle className="h-3 w-3 text-danger" /> Gap — genuinely missing</span>
                 </div>
               </div>
 
@@ -134,11 +134,11 @@ export default function GapAnalysis({ skillsHeatmap, transferableBridges, gapRoa
                     {transferableBridges.map((item) => (
                       <div
                         key={item.skill}
-                        className="flex gap-3 rounded-xl border-l-2 border-[#f59e0b]/60 bg-[#f59e0b]/5 px-4 py-3"
+                        className="flex gap-3 rounded-xl border-l-2 border-warning/60 bg-warning/5 px-4 py-3"
                       >
-                        <ArrowRightLeft className="h-4 w-4 text-[#f59e0b] shrink-0 mt-0.5" />
+                        <ArrowRightLeft className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-semibold text-[#f59e0b] mb-0.5">{item.skill}</p>
+                          <p className="text-xs font-semibold text-warning mb-0.5">{item.skill}</p>
                           <p className="text-sm text-foreground-soft leading-relaxed">{item.bridge}</p>
                         </div>
                       </div>
@@ -157,11 +157,11 @@ export default function GapAnalysis({ skillsHeatmap, transferableBridges, gapRoa
                     {gapRoadmap.map((item) => (
                       <div
                         key={item.skill}
-                        className="flex gap-3 rounded-xl border-l-2 border-[#ef4444]/50 bg-[#ef4444]/5 px-4 py-3"
+                        className="flex gap-3 rounded-xl border-l-2 border-danger/50 bg-danger/5 px-4 py-3"
                       >
-                        <BookOpen className="h-4 w-4 text-[#ef4444] shrink-0 mt-0.5" />
+                        <BookOpen className="h-4 w-4 text-danger shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-semibold text-[#ef4444] mb-0.5">{item.skill}</p>
+                          <p className="text-xs font-semibold text-danger mb-0.5">{item.skill}</p>
                           <p className="text-sm text-foreground-soft leading-relaxed">{item.action}</p>
                         </div>
                       </div>

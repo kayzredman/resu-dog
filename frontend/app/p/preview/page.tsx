@@ -5,7 +5,15 @@ import Link from "next/link";
 import { PawPrint } from "lucide-react";
 import { toast } from "sonner";
 import ProfileView from "@/components/profile/ProfileView";
-import type { ProfileData } from "@/components/profile/ProfileView";
+import type { ProfileData, ShareOptions } from "@/components/profile/ProfileView";
+
+const PUBLISHED_KEY = "resudog_published";
+
+interface PublishedProfile {
+  slug: string;
+  url: string;
+  deleteToken: string;
+}
 
 // ─── No data state ────────────────────────────────────────────────────────────
 
@@ -13,7 +21,7 @@ function NoProfile() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
       <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
-        <PawPrint className="h-7 w-7 text-primary" />
+        <PawPrint className="h-7 w-7 text-primary-ink" />
       </div>
       <h2 className="text-xl font-bold mb-2">No profile data found</h2>
       <p className="text-sm text-foreground-muted mb-6 max-w-sm">
@@ -35,6 +43,7 @@ export default function ProfilePreviewPage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [resumeText, setResumeText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [published, setPublished] = useState<PublishedProfile | null>(null);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -43,6 +52,8 @@ export default function ProfilePreviewPage() {
         const parsed = raw ? (JSON.parse(raw) as ProfileData) : null;
         setProfile(parsed);
         setResumeText(localStorage.getItem("resudog_resume"));
+        const pub = localStorage.getItem(PUBLISHED_KEY);
+        setPublished(pub ? (JSON.parse(pub) as PublishedProfile) : null);
       } catch {
         setProfile(null);
       }
@@ -50,7 +61,7 @@ export default function ProfilePreviewPage() {
     });
   }, []);
 
-  const handleShare = async (): Promise<string | null> => {
+  const handleShare = async (options: ShareOptions): Promise<string | null> => {
     if (!profile) return null;
 
     try {
@@ -59,7 +70,8 @@ export default function ProfilePreviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profile,
-          resume: resumeText,
+          resume: options.allowCvDownload ? resumeText : undefined,
+          options,
         }),
       });
 
@@ -69,12 +81,39 @@ export default function ProfilePreviewPage() {
         return null;
       }
 
-      const { url } = (await res.json()) as { slug: string; url: string };
+      const pub = (await res.json()) as PublishedProfile;
+      try {
+        localStorage.setItem(PUBLISHED_KEY, JSON.stringify(pub));
+      } catch {
+        // Storage blocked — the link still works, but unpublish won't survive a reload
+      }
+      setPublished(pub);
       toast.success("Profile published! Link copied to clipboard.");
-      return url;
+      return pub.url;
     } catch {
       toast.error("Network error — could not publish profile.");
       return null;
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!published) return;
+    try {
+      const res = await fetch("/api/v1/profile/publish", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: published.slug, deleteToken: published.deleteToken }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: "Failed to unpublish." }));
+        toast.error(err.detail || "Failed to unpublish.");
+        return;
+      }
+      localStorage.removeItem(PUBLISHED_KEY);
+      setPublished(null);
+      toast.success("Profile unpublished. The link no longer works.");
+    } catch {
+      toast.error("Network error — could not unpublish.");
     }
   };
 
@@ -93,6 +132,8 @@ export default function ProfilePreviewPage() {
       profile={profile}
       resumeText={resumeText}
       onShare={handleShare}
+      publishedUrl={published?.url ?? null}
+      onUnpublish={handleUnpublish}
     />
   );
 }

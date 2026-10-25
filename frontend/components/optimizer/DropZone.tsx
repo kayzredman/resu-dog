@@ -25,12 +25,6 @@ const ACCEPTED_TYPES = {
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: DropZoneProps) {
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +54,7 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
     return (
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/15">
-          <File className="h-5 w-5 text-primary" />
+          <File className="h-5 w-5 text-primary-ink" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
@@ -99,18 +93,23 @@ export default function DropZone({ onFileAccepted, uploadedFile, onRemove }: Dro
             <Upload
               className={cn(
                 "h-6 w-6 transition-colors",
-                isDragActive ? "text-primary" : "text-foreground-muted"
+                isDragActive ? "text-primary-ink" : "text-foreground-muted"
               )}
             />
           </div>
-          <div>
+          {/* Phones can't drag and drop, so touch screens get tap-first copy */}
+          <div className="pointer-coarse:hidden">
             <p className="text-sm font-medium">
               {isDragActive ? "Drop your resume here" : "Drag & drop your resume"}
             </p>
             <p className="mt-1 text-xs text-foreground-muted">
               or{" "}
-              <span className="text-primary underline underline-offset-2">browse files</span>
+              <span className="text-primary-ink underline underline-offset-2">browse files</span>
             </p>
+          </div>
+          <div className="hidden pointer-coarse:block">
+            <p className="text-base font-medium">Tap to choose your resume</p>
+            <p className="mt-1 text-xs text-foreground-muted">From Files, iCloud Drive, Google Drive or Downloads</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-foreground-muted">
             <FileText className="h-3.5 w-3.5" />

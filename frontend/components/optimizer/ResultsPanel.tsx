@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2, FileText, PenLine } from "lucide-react";
+import { FileDown, Copy, Check, Lock, Sparkles, ChevronDown, ChevronUp, ShieldCheck, User, Globe, Loader2, FileText, PenLine, PencilLine } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { downloadPDF } from "@/lib/pdf";
 import { downloadDOCX } from "@/lib/docx";
+import { PLACEHOLDER_PATTERN } from "@/lib/prompt-rules";
 
 interface ResultsPanelProps {
   optimizedResume: string;
@@ -48,14 +49,32 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+/** Renders resume text with [placeholder] brackets highlighted for the user to fill in. */
+function HighlightedText({ text }: { text: string }) {
+  const parts = text.split(new RegExp(`(${PLACEHOLDER_PATTERN.source})`, "g"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <mark key={i} className="rounded bg-warning/20 px-0.5 font-semibold text-foreground ring-1 ring-warning/50">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 function LockedOverlay({ message }: { message: string }) {
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm bg-background/70 gap-3">
-      <Lock className="h-6 w-6 text-primary" />
+      <Lock className="h-6 w-6 text-primary-ink" />
       <p className="text-sm font-medium text-center px-4">{message}</p>
-      <button className="rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark transition-colors shadow-lg shadow-[rgba(108,99,255,0.3)]">
-        Upgrade to Pro — $12/mo
-      </button>
+      <span className="rounded-xl border border-line px-5 py-2 text-sm font-semibold text-foreground-muted">
+        Pro plan coming soon
+      </span>
     </div>
   );
 }
@@ -83,12 +102,23 @@ export default function ResultsPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [editedResume, setEditedResume] = useState(optimizedResume);
   const exportRef = useRef<HTMLDivElement>(null);
+  const placeholderCount = editedResume.match(PLACEHOLDER_PATTERN)?.length ?? 0;
 
-  // Sync if parent passes new optimizedResume
-  useEffect(() => {
+  const warnIfPlaceholders = () => {
+    if (placeholderCount > 0) {
+      toast.warning(
+        `Your resume still has ${placeholderCount} highlighted detail${placeholderCount === 1 ? "" : "s"} to fill in. Tap Edit to replace them with your real numbers.`
+      );
+    }
+  };
+
+  // Reset edits if the parent passes a new optimizedResume (adjusting state during render)
+  const [syncedResume, setSyncedResume] = useState(optimizedResume);
+  if (syncedResume !== optimizedResume) {
+    setSyncedResume(optimizedResume);
     setEditedResume(optimizedResume);
     setIsEditing(false);
-  }, [optimizedResume]);
+  }
 
   useEffect(() => {
     if (!showExportMenu) return;
@@ -157,12 +187,14 @@ export default function ResultsPanel({
   };
 
   const handleResumeDownload = async () => {
+    warnIfPlaceholders();
     setDownloadingResume(true);
     await downloadPDF("optimized-resume.pdf", editedResume);
     setDownloadingResume(false);
   };
 
   const handleDocxDownload = async () => {
+    warnIfPlaceholders();
     setDownloadingDocx(true);
     await downloadDOCX("optimized-resume.docx", editedResume);
     setDownloadingDocx(false);
@@ -187,9 +219,9 @@ export default function ResultsPanel({
           {/* Header row */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="h-4 w-4 text-primary-ink" />
               <h3 className="font-semibold">Optimized Resume</h3>
-              <span className="flex items-center gap-1 rounded-full border border-[#22c55e]/30 bg-[#22c55e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#22c55e]">
+              <span className="flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
                 <ShieldCheck className="h-3 w-3" />
                 Assessment refined
               </span>
@@ -199,7 +231,7 @@ export default function ResultsPanel({
               <button
                 onClick={handleCreateProfile}
                 disabled={creatingProfile}
-                className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary-ink hover:bg-primary/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingProfile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <User className="h-3.5 w-3.5" />}
                 {creatingProfile ? "Building…" : "Create Profile Page"}
@@ -237,7 +269,7 @@ export default function ResultsPanel({
                   onClick={() => setIsEditing((v) => !v)}
                   className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold active:scale-95 transition-all ${
                     isEditing
-                      ? "border-primary/40 bg-primary/10 text-primary"
+                      ? "border-primary/40 bg-primary/10 text-primary-ink"
                       : "border-line text-foreground-muted hover:text-foreground hover:border-line-hover"
                   }`}
                 >
@@ -256,7 +288,7 @@ export default function ResultsPanel({
               <button
                 disabled={!isPaid || downloadingResume}
                 onClick={handleResumeDownload}
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark active:scale-95 active:bg-[#5a52e0] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-dark active:scale-95 active:bg-primary-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <FileDown className="h-3.5 w-3.5" />
                 {downloadingResume ? "Generating…" : "PDF"}
@@ -264,16 +296,27 @@ export default function ResultsPanel({
             </div>
           </div>
 
+          {placeholderCount > 0 && (
+            <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+              <PencilLine className="h-4 w-4 shrink-0 mt-0.5 text-warning" />
+              <p>
+                <span className="font-semibold">
+                  {placeholderCount} detail{placeholderCount === 1 ? "" : "s"} to fill in.
+                </span>{" "}
+                We never invent numbers for you. Replace each highlighted <mark className="rounded bg-warning/20 px-0.5 ring-1 ring-warning/50">[bracket]</mark> with your real figure, or delete it.
+              </p>
+            </div>
+          )}
           <div className="rounded-xl bg-background p-4 max-h-80 overflow-y-auto">
             {isEditing ? (
               <textarea
                 value={editedResume}
                 onChange={(e) => setEditedResume(e.target.value)}
-                className="w-full min-h-72 resize-y bg-transparent text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed focus:outline-none"
+                className="w-full min-h-72 resize-y bg-transparent text-base sm:text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed focus:outline-none"
               />
             ) : (
               <pre className="text-xs text-foreground-soft whitespace-pre-wrap font-mono leading-relaxed">
-                {editedResume}
+                <HighlightedText text={editedResume} />
               </pre>
             )}
           </div>
@@ -295,7 +338,7 @@ export default function ResultsPanel({
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-primary" />
+                <Globe className="h-4 w-4 text-primary-ink" />
                 <h3 className="font-semibold text-sm">
                   {EXPORT_FORMATS.find((f) => f.key === exportFormat)?.label ?? "Export"}
                 </h3>
@@ -312,7 +355,7 @@ export default function ResultsPanel({
             </div>
             {exportLoading ? (
               <div className="flex items-center gap-2 text-sm text-foreground-muted py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <Loader2 className="h-4 w-4 animate-spin text-primary-ink" />
                 Reformatting for {EXPORT_FORMATS.find((f) => f.key === exportFormat)?.label}…
               </div>
             ) : (
@@ -340,7 +383,7 @@ export default function ResultsPanel({
           >
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold">Changes Made</span>
-              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary-ink">
                 {changesMade.length}
               </span>
             </div>
@@ -366,7 +409,7 @@ export default function ResultsPanel({
                     {keywordsAdded.map((kw) => (
                       <span
                         key={kw}
-                        className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                        className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-primary-ink"
                       >
                         {kw}
                       </span>

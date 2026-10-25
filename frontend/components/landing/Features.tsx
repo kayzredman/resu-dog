@@ -17,7 +17,7 @@ const features = [
     description:
       "See exactly how your resume scores against the job description before and after optimization — across keywords, skills, and formatting.",
     tag: "Free preview",
-    tagColor: "#00d4aa",
+    tagColor: "var(--accent)",
   },
   {
     icon: Pen,
@@ -25,15 +25,15 @@ const features = [
     description:
       "Every experience bullet is rewritten with powerful action verbs and role-specific keywords. No fabrication — only what's already there, made stronger.",
     tag: "Core",
-    tagColor: "#6c63ff",
+    tagColor: "var(--primary-ink)",
   },
   {
     icon: FileDown,
     title: "Clean ATS-Proof Output",
     description:
-      "Download your optimized resume as PDF or DOCX. No tables, no columns, no headers that break parsers. Built to pass every ATS system.",
+      "Download your optimized resume as PDF or DOCX. No tables, columns or headers that trip up resume parsers — clean, single-column text that applicant tracking systems read reliably.",
     tag: "Paid",
-    tagColor: "#6c63ff",
+    tagColor: "var(--primary-ink)",
   },
   {
     icon: Globe,
@@ -41,15 +41,15 @@ const features = [
     description:
       "Not a template. A cover letter that connects your specific experience to the specific role — written to complement your optimized resume.",
     tag: "Paid",
-    tagColor: "#6c63ff",
+    tagColor: "var(--primary-ink)",
   },
   {
     icon: Eye,
     title: "Public Profile Page",
     description:
-      "Share a beautiful one-page resume site with a 'Hire Me' CTA, ATS score badge, and PDF download. Toggle your availability status.",
+      "Share a one-page profile with a 'Hire Me' button. You choose what's public, it stays out of search engines, and you can unpublish anytime.",
     tag: "New",
-    tagColor: "#22c55e",
+    tagColor: "var(--success)",
   },
   {
     icon: Users,
@@ -57,7 +57,7 @@ const features = [
     description:
       "Export your optimized resume for LinkedIn, WES credential evaluation, or UK/EU CV format — one click, perfectly formatted.",
     tag: "New",
-    tagColor: "#22c55e",
+    tagColor: "var(--success)",
   },
 ];
 
@@ -78,22 +78,22 @@ export default function Features() {
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ y: 20 }}
+              whileInView={{ y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.5 }}
               className="group rounded-2xl border border-line bg-surface p-6 hover:border-primary/30 transition-colors"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 border border-primary/20 group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="h-5 w-5 text-primary" />
+                  <feature.icon className="h-5 w-5 text-primary-ink" />
                 </div>
                 <span
                   className="rounded-full px-2.5 py-0.5 text-xs font-medium"
                   style={{
                     color: feature.tagColor,
-                    background: `${feature.tagColor}15`,
-                    border: `1px solid ${feature.tagColor}30`,
+                    background: `color-mix(in srgb, ${feature.tagColor} 9%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${feature.tagColor} 19%, transparent)`,
                   }}
                 >
                   {feature.tag}

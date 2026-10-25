@@ -12,32 +12,33 @@ export default function Hero() {
         aria-hidden
         className="pointer-events-none absolute inset-0 flex items-start justify-center"
       >
-        <div className="h-[600px] w-[900px] rounded-full bg-[#6c63ff] opacity-[0.07] blur-[120px]" />
+        <div className="h-[600px] w-[900px] rounded-full bg-primary opacity-[0.07] blur-[120px]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left — copy */}
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 24 }}
+            animate={{ y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-ink mb-6">
               <Sparkles className="h-3 w-3" />
-              Powered by GPT-4o
+              No made-up achievements. Ever.
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
               Your resume,{" "}
-              <span className="text-[#6c63ff]">finally</span>{" "}
+              <span className="text-primary-ink">finally</span>{" "}
               seen by humans
             </h1>
 
             <p className="mt-5 text-lg text-foreground-muted leading-relaxed max-w-xl">
-              75% of resumes are rejected by ATS before a human reads them. Resu-Dog
-              rewrites yours for the job, scores it before and after, and writes a
-              cover letter that&apos;s actually personal.
+              Recruiters skim, and applicant tracking systems filter on keywords.
+              Resu-Dog rewrites your resume for the job using only what&apos;s true,
+              shows you exactly where you match, and writes a cover letter that&apos;s
+              actually personal.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
@@ -59,15 +60,15 @@ export default function Hero() {
             {/* Trust badges */}
             <div className="mt-8 flex flex-wrap items-center gap-5 text-xs text-foreground-muted">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-[#00d4aa]" />
-                Data never stored
+                <ShieldCheck className="h-4 w-4 text-accent" />
+                Nothing stored unless you share
               </span>
               <span className="flex items-center gap-1.5">
-                <FileText className="h-4 w-4 text-[#00d4aa]" />
+                <FileText className="h-4 w-4 text-accent" />
                 PDF, DOCX, TXT
               </span>
               <span className="flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-[#00d4aa]" />
+                <Sparkles className="h-4 w-4 text-accent" />
                 Free to try
               </span>
             </div>
@@ -75,8 +76,8 @@ export default function Hero() {
 
           {/* Right — illustration */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
             transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
             className="hidden lg:flex justify-center"
           >
@@ -97,20 +98,20 @@ function HeroIllustration() {
           <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider">
             Compatibility Score
           </span>
-          <span className="text-xs text-[#00d4aa] font-semibold">Senior Dev Role</span>
+          <span className="text-xs text-accent font-semibold">Senior Dev Role</span>
         </div>
 
         {/* Before / After scores */}
         <div className="grid grid-cols-2 gap-3 mb-5">
           <div className="rounded-xl bg-background p-4 text-center border border-line">
             <p className="text-xs text-foreground-muted mb-1">Before</p>
-            <p className="text-3xl font-black text-[#ef4444]">38</p>
+            <p className="text-3xl font-black text-danger">38</p>
             <p className="text-xs text-foreground-muted">/ 100</p>
           </div>
           <div className="rounded-xl bg-primary/10 p-4 text-center border border-primary/30">
-            <p className="text-xs text-[#6c63ff] mb-1">After</p>
-            <p className="text-3xl font-black text-[#6c63ff]">91</p>
-            <p className="text-xs text-[#6c63ff]/70">/ 100</p>
+            <p className="text-xs text-primary-ink mb-1">After</p>
+            <p className="text-3xl font-black text-primary-ink">91</p>
+            <p className="text-xs text-primary-ink/70">/ 100</p>
           </div>
         </div>
 
@@ -123,11 +124,11 @@ function HeroIllustration() {
           <div key={item.label} className="mb-3 last:mb-0">
             <div className="flex justify-between text-xs text-foreground-muted mb-1.5">
               <span>{item.label}</span>
-              <span className="text-[#6c63ff] font-semibold">{item.after}%</span>
+              <span className="text-primary-ink font-semibold">{item.after}%</span>
             </div>
             <div className="h-1.5 rounded-full bg-line overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#6c63ff] to-[#00d4aa]"
+                className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
                 style={{ width: `${item.after}%` }}
               />
             </div>
@@ -136,7 +137,7 @@ function HeroIllustration() {
 
         {/* CTA row */}
         <div className="mt-5 flex gap-2">
-          <div className="flex-1 rounded-lg bg-[#6c63ff] py-2.5 text-center text-xs font-semibold text-white">
+          <div className="flex-1 rounded-lg bg-primary py-2.5 text-center text-xs font-semibold text-white">
             Download Resume
           </div>
           <div className="flex-1 rounded-lg border border-line py-2.5 text-center text-xs font-medium text-foreground-muted">

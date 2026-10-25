@@ -43,46 +43,55 @@ export interface AssessmentData {
 
 interface ShortlistAssessmentProps {
   assessment: AssessmentData;
+  /** "general" = Just polish: no job, so the verdict describes readiness, not fit */
+  mode?: "targeted" | "general";
 }
+
+// Honest, outcome-free labels: a read of the paper, never a hiring prediction
+const VERDICT_LABELS = {
+  targeted: { Low: "Weak fit on paper", Fair: "Partial fit on paper", Good: "Good fit on paper", Strong: "Strong fit on paper" },
+  general: { Low: "Needs a lot of work", Fair: "Needs some work", Good: "Nearly ready", Strong: "Ready to send" },
+} as const;
 
 const PROBABILITY_CONFIG = {
   Low: {
-    color: "#ef4444",
-    bg: "bg-[#ef4444]/10",
-    border: "border-[#ef4444]/25",
-    text: "text-[#ef4444]",
+    color: "var(--danger)",
+    bg: "bg-danger/10",
+    border: "border-danger/25",
+    text: "text-danger",
     bar: 15,
     label: "Low chance",
   },
   Fair: {
-    color: "#f59e0b",
-    bg: "bg-[#f59e0b]/10",
-    border: "border-[#f59e0b]/25",
-    text: "text-[#f59e0b]",
+    color: "var(--warning)",
+    bg: "bg-warning/10",
+    border: "border-warning/25",
+    text: "text-warning",
     bar: 42,
     label: "Fair chance",
   },
   Good: {
-    color: "#6c63ff",
-    bg: "bg-[#6c63ff]/10",
-    border: "border-[#6c63ff]/25",
-    text: "text-[#6c63ff]",
+    color: "var(--primary-ink)",
+    bg: "bg-primary/10",
+    border: "border-primary/25",
+    text: "text-primary-ink",
     bar: 70,
     label: "Good chance",
   },
   Strong: {
-    color: "#22c55e",
-    bg: "bg-[#22c55e]/10",
-    border: "border-[#22c55e]/25",
-    text: "text-[#22c55e]",
+    color: "var(--success)",
+    bg: "bg-success/10",
+    border: "border-success/25",
+    text: "text-success",
     bar: 92,
     label: "Strong match",
   },
 };
 
-export default function ShortlistAssessment({ assessment }: ShortlistAssessmentProps) {
+export default function ShortlistAssessment({ assessment, mode = "targeted" }: ShortlistAssessmentProps) {
   const [open, setOpen] = useState(false);
-  const cfg = PROBABILITY_CONFIG[assessment.shortlist_probability] ?? PROBABILITY_CONFIG.Fair;
+  const verdict = PROBABILITY_CONFIG[assessment.shortlist_probability] ? assessment.shortlist_probability : "Fair";
+  const cfg = { ...PROBABILITY_CONFIG[verdict], label: VERDICT_LABELS[mode][verdict] };
 
   return (
     <div className="rounded-2xl border border-line bg-surface overflow-hidden">
@@ -123,7 +132,7 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs font-medium text-primary hidden sm:block">
+          <span className="text-xs font-medium text-primary-ink hidden sm:block">
             {open ? "Hide analysis" : "View deep analysis"}
           </span>
           {open ? (
@@ -150,11 +159,11 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
               {assessment.strengths.length > 0 && (
                 <Section
                   icon={CheckCircle2}
-                  iconColor="#22c55e"
+                  iconColor="var(--success)"
                   title="What's working"
                   items={assessment.strengths}
                   itemStyle="text-foreground-soft"
-                  dotColor="#22c55e"
+                  dotColor="var(--success)"
                 />
               )}
 
@@ -162,11 +171,11 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
               {assessment.critical_gaps.length > 0 && (
                 <Section
                   icon={AlertTriangle}
-                  iconColor="#f59e0b"
-                  title="Critical gaps"
+                  iconColor="var(--warning)"
+                  title={mode === "general" ? "What's holding it back" : "Gaps against the job"}
                   items={assessment.critical_gaps}
                   itemStyle="text-foreground-soft"
-                  dotColor="#f59e0b"
+                  dotColor="var(--warning)"
                 />
               )}
 
@@ -174,11 +183,11 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
               {assessment.quick_wins.length > 0 && (
                 <Section
                   icon={Zap}
-                  iconColor="#6c63ff"
+                  iconColor="var(--primary-ink)"
                   title="Quick wins — do these now"
                   items={assessment.quick_wins}
                   itemStyle="text-foreground-soft"
-                  dotColor="#6c63ff"
+                  dotColor="var(--primary-ink)"
                   numbered
                 />
               )}
@@ -187,19 +196,19 @@ export default function ShortlistAssessment({ assessment }: ShortlistAssessmentP
               {assessment.red_flags.length > 0 && (
                 <Section
                   icon={ShieldAlert}
-                  iconColor="#ef4444"
-                  title="Recruiter red flags"
+                  iconColor="var(--danger)"
+                  title="What a recruiter might ask about"
                   items={assessment.red_flags}
                   itemStyle="text-foreground-soft"
-                  dotColor="#ef4444"
+                  dotColor="var(--danger)"
                 />
               )}
 
               {/* No red flags — positive note */}
               {assessment.red_flags.length === 0 && (
-                <div className="flex items-center gap-2 rounded-xl border border-[#22c55e]/20 bg-[#22c55e]/8 px-4 py-3 sm:col-span-2">
-                  <TrendingUp className="h-4 w-4 text-[#22c55e] shrink-0" />
-                  <p className="text-xs text-[#22c55e] font-medium">No major red flags detected — strong presentation overall.</p>
+                <div className="flex items-center gap-2 rounded-xl border border-success/20 bg-success/8 px-4 py-3 sm:col-span-2">
+                  <TrendingUp className="h-4 w-4 text-success shrink-0" />
+                  <p className="text-xs text-success font-medium">No major red flags detected — strong presentation overall.</p>
                 </div>
               )}
             </div>

@@ -1,22 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getRedis, profileKey } from "@/lib/redis";
+import type { StoredProfile } from "@/lib/profile";
 import PublicProfileClient from "./client";
 
 export const dynamic = "force-dynamic";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface StoredProfile {
-  profile: {
-    name: string;
-    title: string;
-    summary?: string;
-    [key: string]: unknown;
-  };
-  resume: string | null;
-  createdAt: string;
-}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -27,10 +17,10 @@ interface PageProps {
 async function getStoredProfile(slug: string): Promise<StoredProfile | null> {
   try {
     const redis = getRedis();
-    const raw = await redis.get<string>(profileKey(slug));
+    const raw = await redis.get<string | StoredProfile>(profileKey(slug));
     if (!raw) return null;
     // Upstash may return parsed object or string depending on how it was stored
-    return typeof raw === "string" ? JSON.parse(raw) : raw as unknown as StoredProfile;
+    return typeof raw === "string" ? (JSON.parse(raw) as StoredProfile) : raw;
   } catch {
     return null;
   }
@@ -43,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const data = await getStoredProfile(slug);
 
   if (!data) {
-    return { title: "Profile Not Found — Resu-Dog" };
+    return { title: "Profile Not Found — Resu-Dog", robots: { index: false, follow: false } };
   }
 
   const { name, title, summary } = data.profile;
@@ -54,6 +44,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${name} — ${title} | Resu-Dog`,
     description: desc,
+    // Shared profiles contain personal details: keep them out of search engines
+    robots: { index: false, follow: false, nocache: true },
     openGraph: {
       title: `${name} — ${title}`,
       description: desc,
@@ -77,9 +69,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
   if (!data) notFound();
 
   return (
+    // Never pass deleteToken to the client
     <PublicProfileClient
       profile={data.profile}
       resumeText={data.resume}
+      openToWork={data.openToWork === true}
     />
   );
 }

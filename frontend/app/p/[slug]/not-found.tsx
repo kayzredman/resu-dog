@@ -5,7 +5,7 @@ export default function ProfileNotFound() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
       <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
-        <PawPrint className="h-7 w-7 text-primary" />
+        <PawPrint className="h-7 w-7 text-primary-ink" />
       </div>
       <h2 className="text-xl font-bold mb-2">Profile not found</h2>
       <p className="text-sm text-foreground-muted mb-6 max-w-sm">

@@ -4,15 +4,17 @@ import ProfileView from "@/components/profile/ProfileView";
 import type { ProfileData } from "@/components/profile/ProfileView";
 
 interface Props {
-  profile: Record<string, unknown>;
+  profile: ProfileData;
   resumeText: string | null;
+  openToWork: boolean;
 }
 
-export default function PublicProfileClient({ profile, resumeText }: Props) {
+export default function PublicProfileClient({ profile, resumeText, openToWork }: Props) {
   return (
     <ProfileView
-      profile={profile as unknown as ProfileData}
+      profile={profile}
       resumeText={resumeText}
+      openToWork={openToWork}
       isPublic
     />
   );

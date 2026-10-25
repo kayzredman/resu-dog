@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
+import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
+import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/v1/profile
 // Body: { resume: string }
@@ -8,12 +8,12 @@ import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { detail: "OPENAI_API_KEY is not set." },
-        { status: 500 }
-      );
+    const limited = await rateLimit(req, "ai-light");
+    if (limited) return limited;
+
+    const notConfigured = aiNotConfigured();
+    if (notConfigured) {
+      return NextResponse.json({ detail: notConfigured }, { status: 500 });
     }
 
     const { resume } = await req.json() as { resume: string };
@@ -24,14 +24,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: "Resume text too long. Maximum is 50,000 characters." }, { status: 400 });
     }
 
-    const client = new OpenAI({ apiKey });
-
-    const res = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: `You are a resume parser. Extract structured profile data from this resume.
+    const res = await generateJSON(`You are a resume parser. Extract structured profile data from this resume.
 
 Return ONLY valid JSON with this exact structure:
 {
@@ -40,7 +33,7 @@ Return ONLY valid JSON with this exact structure:
   "location": "<city, country if present>",
   "email": "<email if present, else null>",
   "linkedin": "<LinkedIn URL if present, else null>",
-  "summary": "<professional summary — 2–3 sentences, from resume or inferred from experience>",
+  "summary": "<professional summary — 2–3 sentences, using only what the resume states>",
   "years_experience": <integer — total years of professional experience>,
   "industries": ["<industry 1>", "<industry 2>"],
   "skills": ["<skill 1>", "<skill 2>"],
@@ -71,17 +64,12 @@ Rules:
 - years_experience: calculate from earliest to latest role. If unclear, estimate conservatively.
 
 RESUME:
-${resume}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-    });
+${resume}`, { temperature: 0.1 });
 
-    return NextResponse.json(parseAIResponse(res));
+    return NextResponse.json(res);
   } catch (err: unknown) {
     console.error("[profile route]", err);
-    const { message, status } = handleOpenAIError(err);
+    const { message, status } = handleAIError(err);
     return NextResponse.json({ detail: message }, { status });
   }
 }

@@ -17,12 +17,15 @@
   --foreground:          #f0f0f5;
   --foreground-soft:     #c0c0d0;
   --foreground-muted:    #8888aa;
-  --foreground-dim:      #4a4a6a;
+  --foreground-dim:      #80809f;   /* ≥4.5:1 on background and surface */
   --foreground-disabled: #3a3a5a;
 
-  /* Brand (same both modes) */
-  --primary:      #6c63ff;
-  --primary-dark: #5a52e0;
+  /* Brand
+     --primary      fills (buttons, badges) — white text on it is ≥4.5:1
+     --primary-ink  primary-coloured TEXT — ≥4.5:1 on this theme's backgrounds */
+  --primary:      #5b52f0;
+  --primary-dark: #4a42d6;
+  --primary-ink:  #8b84ff;
   --primary-glow: rgba(108, 99, 255, 0.3);
   --accent:       #00d4aa;
   --accent-glow:  rgba(0, 212, 170, 0.2);
@@ -45,16 +48,18 @@
   --foreground:          #0a0a0f;
   --foreground-soft:     #1e1e3a;
   --foreground-muted:    #5a5a80;
-  --foreground-dim:      #8888b0;
+  --foreground-dim:      #6b6b90;
   --foreground-disabled: #b0b0cc;
 
-  --primary:      #6c63ff;
-  --primary-dark: #5a52e0;
+  --primary:      #5b52f0;
+  --primary-dark: #4a42d6;
+  --primary-ink:  #5b52f0;
   --primary-glow: rgba(108, 99, 255, 0.18);
-  --accent:       #00b894;
-  --accent-glow:  rgba(0, 184, 148, 0.15);
-  --success:      #16a34a;
-  --warning:      #d97706;
+  /* Status colours darkened so text on white passes WCAG AA (4.5:1) */
+  --accent:       #007a62;
+  --accent-glow:  rgba(0, 122, 98, 0.15);
+  --success:      #15803d;
+  --warning:      #b45309;
   --danger:       #dc2626;
 }
 
@@ -80,6 +85,7 @@
   /* Brand */
   --color-primary:      var(--primary);
   --color-primary-dark: var(--primary-dark);
+  --color-primary-ink:  var(--primary-ink);
   --color-accent:       var(--accent);
   --color-success:      var(--success);
   --color-warning:      var(--warning);
@@ -96,9 +102,35 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Our own pressed states replace the grey tap flash on mobile */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Visible focus for keyboards and switch control (iPad, Android, desktop) */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary-ink);
+  outline-offset: 2px;
+}
+
+/* Bottom padding for the iPhone home indicator / Android gesture bar */
+.pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 body {
+  /* Keep content clear of the notch / rounded corners in landscape */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;

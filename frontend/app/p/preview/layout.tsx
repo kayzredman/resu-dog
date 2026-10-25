@@ -4,6 +4,7 @@ export const metadata: Metadata = {
   title: "Professional Profile — Resu-Dog",
   description:
     "View this candidate's professional profile — skills, experience, education, and more. Powered by Resu-Dog AI.",
+  robots: { index: false, follow: false },
   openGraph: {
     title: "Professional Profile — Resu-Dog",
     description:

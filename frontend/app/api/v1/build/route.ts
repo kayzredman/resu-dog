@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
+import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
+import { rateLimit } from "@/lib/rate-limit";
+import { NO_FABRICATION_RULES, PLACEHOLDER_NOTE, stripInventedContacts } from "@/lib/prompt-rules";
+import { verifyClaims, supports } from "@/lib/claim-guard";
 
 // ─── POST /api/v1/build ───────────────────────────────────────────────────────
 //
@@ -9,41 +11,42 @@ import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
 //   "write"     — take JD + answers → write full CV + score it
 //
 
+// "write" makes several sequential AI calls
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { detail: "OPENAI_API_KEY is not set. Add it to .env.local." },
-        { status: 500 }
-      );
+    const notConfigured = aiNotConfigured();
+    if (notConfigured) {
+      return NextResponse.json({ detail: notConfigured }, { status: 500 });
     }
 
     const body = await req.json();
     const { action } = body;
 
+    // Questionnaire answers + JD should comfortably fit; anything bigger is abuse
+    if (JSON.stringify(body).length > 60_000) {
+      return NextResponse.json({ detail: "Request too large." }, { status: 413 });
+    }
+
     if (!action) {
       return NextResponse.json({ detail: "Missing action field." }, { status: 400 });
     }
 
-    const client = new OpenAI({ apiKey });
+    const limited = await rateLimit(req, action === "write" ? "ai" : "ai-light");
+    if (limited) return limited;
 
     // ── Action: analyze ────────────────────────────────────────────────────────
     if (action === "analyze") {
-      const { job_description } = body as { job_description: string };
-      if (!job_description) {
-        return NextResponse.json({ detail: "Missing job_description." }, { status: 400 });
+      const job_description = String((body as { job_description?: unknown }).job_description ?? "").trim();
+      if (job_description.length < 50) {
+        return NextResponse.json({ detail: "Paste the job description (at least 50 characters)." }, { status: 400 });
       }
       if (job_description.length > 15_000) {
         return NextResponse.json({ detail: "Job description too long. Maximum is 15,000 characters." }, { status: 400 });
       }
 
-      const res = await client.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: `You are a career expert. Analyze this job description and extract key information.
+      const res = await generateJSON(`You are a career expert. Analyze this job description and extract key information.
 
 Return ONLY valid JSON:
 {
@@ -72,21 +75,17 @@ Question guidelines:
 - Questions should feel like a smart recruiter wrote them for THIS job — not generic.
 
 JOB DESCRIPTION:
-${job_description}`,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3,
-      });
+${job_description}`, { temperature: 0.3 });
 
-      return NextResponse.json(parseAIResponse(res));
+      return NextResponse.json(res);
     }
 
     // ── Action: write ──────────────────────────────────────────────────────────
     if (action === "write") {
-      const { job_description, answers } = body as {
+      const { job_description, answers, questions } = body as {
         job_description: string;
         answers: Record<string, string>;
+        questions?: { id: string; section: string; question: string }[];
       };
 
       if (!job_description || !answers) {
@@ -96,32 +95,32 @@ ${job_description}`,
         );
       }
 
+      // Pair each answer with its question so the writer knows what it refers to
+      const questionById = new Map((questions ?? []).map((q) => [q.id, q]));
       const answersText = Object.entries(answers)
-        .map(([id, val]) => `${id}: ${val}`)
-        .join("\n");
+        .filter(([, val]) => typeof val === "string" && val.trim().length > 0)
+        .map(([id, val]) => {
+          const q = questionById.get(id);
+          return q ? `[${q.section}] ${q.question}\nAnswer: ${val}` : `${id}: ${val}`;
+        })
+        .join("\n\n");
 
-      // Write CV + score in parallel
-      const [writeResult, scoreResult] = await Promise.all([
-        client.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "user",
-              content: `You are an expert resume writer. Build a professional, ATS-optimised resume from the candidate's answers.
+      // Write the CV first; it is scored after refinement, on the final text
+      const writeResult = await generateJSON(`You are an expert resume writer. Build a professional, ATS-optimised resume from the candidate's answers.
 
 Rules:
-- Use ONLY the information provided in the answers. Do NOT fabricate anything.
 - Write in clean single-column plain text — no tables, no columns, no graphics.
 - Use clear section headers: CONTACT, SUMMARY, EXPERIENCE, EDUCATION, SKILLS
 - Under EXPERIENCE, for each role write 3–5 bullet points.
-  Every bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
-  Example: "Increased e-commerce conversion rate by 18% by redesigning the checkout flow."
-  If the candidate's answer lacks a metric, infer a credible one from the role context.
+  Every bullet should follow: [Strong Action Verb] + [Specific What You Did] + [Outcome].
+  Example: "Increased checkout conversion by [X%] by redesigning the payment flow." (use the real figure if the answers give one).
 - NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in', 'Participated in'.
 - Each bullet must be one tight, punchy sentence — aim for 15–22 words.
 - The SUMMARY should be 2–3 sentences tailored to the target role.
-- Naturally incorporate keywords from the job description.
+- Use the job description's wording for skills the candidate's answers show they have.
 - Keep dates, titles, companies exactly as provided.
+
+${NO_FABRICATION_RULES}
 
 Return ONLY valid JSON:
 {
@@ -133,54 +132,9 @@ JOB DESCRIPTION:
 ${job_description}
 
 CANDIDATE ANSWERS:
-${answersText}`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.3,
-        }),
-        client.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "user",
-              content: `You are an expert ATS resume analyst. Based on the candidate's answers and the job description, predict the ATS score for the resume that will be written.
+${answersText}`, { temperature: 0.3 });
 
-Scoring criteria:
-- keyword_coverage: how many of the JD's required keywords/skills the candidate likely has
-- skills_alignment: how well the candidate's experience matches the role's requirements
-- formatting_compliance: assume the CV will be clean plain text (score 90+)
-
-Rules:
-- Do NOT penalise for not mentioning the target company's name.
-- Do NOT penalise for lack of cover letter.
-- Be precise and meaningful.
-
-Return ONLY valid JSON:
-{
-  "overall_score": <integer 0-100>,
-  "keyword_coverage": <integer 0-100>,
-  "skills_alignment": <integer 0-100>,
-  "formatting_compliance": <integer 0-100>,
-  "matched_keywords": ["<keyword>"],
-  "missing_keywords": ["<keyword>"],
-  "summary": "<one sentence ATS match summary>"
-}
-
-JOB DESCRIPTION:
-${job_description}
-
-CANDIDATE ANSWERS:
-${answersText}`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.1,
-        }),
-      ]);
-
-      const cv = parseAIResponse(writeResult) as Record<string, unknown>;
-      const score = parseAIResponse(scoreResult) as Record<string, unknown>;
+      const cv = writeResult as Record<string, unknown>;
 
       // Strip any leaked metadata from the resume text (GPT sometimes appends keywords_used)
       const resumeText = String(cv.resume ?? "")
@@ -188,12 +142,9 @@ ${answersText}`,
         .trim();
 
       // Run assessment against the built CV + JD
-      const assessmentResult = await client.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: `You are a brutally honest senior recruiter with 15+ years of experience. Assess this candidate's resume against the job description and give a frank, constructive shortlist assessment.
+      const assessmentResult = await generateJSON(`You are a brutally honest senior recruiter with 15+ years of experience. Assess this candidate's resume against the job description and give a frank, constructive shortlist assessment.
+
+${PLACEHOLDER_NOTE}
 
 Be specific. Reference actual content from the resume. Do NOT give generic advice.
 
@@ -229,44 +180,32 @@ RESUME:
 ${resumeText}
 
 JOB DESCRIPTION:
-${job_description}`,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.2,
-      });
+${job_description}`, { temperature: 0.2 });
 
-      const assessment = parseAIResponse(assessmentResult) as Record<string, unknown>;
+      const assessment = assessmentResult as Record<string, unknown>;
 
       // Step 3 — apply assessment fixes to produce the definitive final resume
       const quickWins = (assessment.quick_wins as string[])
         .map((w: string, i: number) => `${i + 1}. ${w}`)
         .join("\n");
-      const gaps = ((assessment.critical_gaps as string[]) ?? [])
-        .map((g: string) => `- ${g}`)
-        .join("\n");
+      // Gaps are deliberately not passed to the rewriter (see optimize route): they stay in the review
 
-      const refineResult = await client.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: `You are an expert resume writer. This resume has already been professionally written, but a recruiter assessment identified specific improvements. Apply ALL of them to produce the definitive final version.
+      const refineResult = await generateJSON(`You are an expert resume writer. This resume has already been professionally written, but a recruiter assessment identified specific improvements. Apply ALL of them to produce the definitive final version.
 
-IMPROVEMENTS TO APPLY:
-${gaps ? `Critical gaps to address:\n${gaps}\n` : ""}
-Quick wins to implement:
+IMPROVEMENTS TO APPLY (wording and structure only):
 ${quickWins}
 
 Rules:
-- Apply EVERY quick win and address EVERY critical gap where possible.
-- Do NOT fabricate experience, companies, dates, or qualifications not in the original.
-- Every experience bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
-  If no exact metric exists, infer a credible one from context.
+- Apply each quick win only as far as the existing content supports it. Skip any improvement that would need facts the resume does not contain.
+- Skills the job asks for that the answers don't show are real gaps: never add them, or anything implying them.
+- Keep any existing [placeholder] brackets so the candidate can fill them in.
+- Every experience bullet should follow: [Strong Action Verb] + [Specific What You Did] + [Outcome].
 - NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in'.
 - Each bullet should be one tight sentence — aim for 15–22 words.
 - Maintain clean single-column ATS formatting: clear section headers, no tables/columns.
 - Keep all dates, job titles, and company names exactly as they are.
+
+${NO_FABRICATION_RULES}
 
 Return ONLY valid JSON:
 {
@@ -278,20 +217,53 @@ CURRENT RESUME:
 ${resumeText}
 
 JOB DESCRIPTION:
-${job_description}`,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3,
-      });
+${job_description}`, { temperature: 0.3 });
 
-      const refined = parseAIResponse(refineResult) as Record<string, unknown>;
+      const refined = refineResult as Record<string, unknown>;
       const finalResume = ((refined.refined_resume as string) ?? resumeText)
         .replace(/\nkeywords_used\s*:[\s\S]*$/i, "")
         .trim();
+      const heatmap = (assessment.skills_heatmap as { skill?: string }[] | undefined) ?? [];
+      const gapTerms = heatmap.map((h) => h.skill ?? "").filter((t) => t && !supports(answersText, t));
+      const { text: safeResume } = await verifyClaims(stripInventedContacts(finalResume, answersText), answersText, {
+        gapTerms,
+      });
+
+      // Score the FINAL resume the user receives
+      const scoreResult = await generateJSON(`You are an expert ATS resume analyst. Analyze this resume against the job description.
+
+${PLACEHOLDER_NOTE}
+
+Scoring criteria:
+- keyword_coverage: how many of the JD's required keywords/skills appear in the resume
+- skills_alignment: how well the candidate's experience matches the role's requirements
+- formatting_compliance: ATS-friendliness (clean structure, no tables/columns, standard section headers)
+
+Rules:
+- Do NOT penalise for not mentioning the target company's name.
+- Do NOT penalise for lack of cover letter.
+- Be precise and meaningful.
+
+Return ONLY valid JSON:
+{
+  "overall_score": <integer 0-100>,
+  "keyword_coverage": <integer 0-100>,
+  "skills_alignment": <integer 0-100>,
+  "formatting_compliance": <integer 0-100>,
+  "matched_keywords": ["<keyword>"],
+  "missing_keywords": ["<keyword>"],
+  "summary": "<one sentence ATS match summary>"
+}
+
+JOB DESCRIPTION:
+${job_description}
+
+RESUME:
+${safeResume}`, { temperature: 0.1 });
+      const score = scoreResult as Record<string, unknown>;
 
       return NextResponse.json({
-        resume: finalResume,
+        resume: safeResume,
         keywords_used: cv.keywords_used ?? [],
         score,
         assessment,
@@ -317,39 +289,28 @@ ${job_description}`,
             .join("\n")
         : "";
 
-      const res = await client.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: `You are a career coach helping a candidate complete their resume questionnaire.
+      const res = await generateJSON(`You are a career coach helping a candidate complete their resume questionnaire.
 
 Role: ${role_title} (${seniority}) in ${industry}
 Section: ${section}
 Question: ${question}
 ${contextLines ? `\nContext from other answers already given:\n${contextLines}\n` : ""}
-Write a realistic, specific draft answer the candidate can use as a starting point.
+Write a fill-in-the-blanks draft the candidate completes with their own facts.
 Rules:
-- Write in first person.
-- Be concrete — use real-sounding examples relevant to this specific role and industry.
+- Write in first person, using strong action verbs.
+- Reuse any facts from the candidate's other answers.
+- For every specific you do not know — numbers, tools, company or product names, dates, outcomes — use a short placeholder in square brackets, e.g. "[X%]", "[tool]", "[# people]". Never invent these details.
 - Keep it concise: 2–4 sentences or 3 bullet points as appropriate.
-- Use strong action verbs and include numbers/metrics where natural.
-- This is a draft for the candidate to personalise — avoid made-up proper nouns.
 
-Return ONLY valid JSON: { "suggestion": "<draft answer text>" }`,
-          },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-      });
+Return ONLY valid JSON: { "suggestion": "<draft answer text>" }`, { temperature: 0.7 });
 
-      return NextResponse.json(parseAIResponse(res));
+      return NextResponse.json(res);
     }
 
     return NextResponse.json({ detail: `Unknown action: ${action}` }, { status: 400 });
   } catch (err: unknown) {
     console.error("[build route]", err);
-    const { message, status } = handleOpenAIError(err);
+    const { message, status } = handleAIError(err);
     return NextResponse.json({ detail: message }, { status });
   }
 }

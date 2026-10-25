@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
+import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
+import { rateLimit } from "@/lib/rate-limit";
+import { NO_FABRICATION_RULES, PLACEHOLDER_NOTE, stripInventedContacts } from "@/lib/prompt-rules";
+import { verifyClaims, hasTerm, supports } from "@/lib/claim-guard";
+
+// The full pipeline makes several sequential AI calls
+export const maxDuration = 300;
 
 // ─── Limits ───────────────────────────────────────────────────────────────────
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MAX_RESUME_CHARS = 50_000;
 const MAX_JD_CHARS = 15_000;
+const MIN_JD_CHARS = 50;
 const ALLOWED_TYPES = new Set([
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -14,9 +20,27 @@ const ALLOWED_TYPES = new Set([
 
 // ─── File text extraction ─────────────────────────────────────────────────────
 
+/** The browser-reported MIME type can be spoofed, so check the file's leading bytes too. */
+function matchesSignature(type: string, buffer: Buffer): boolean {
+  if (type === "application/pdf") return buffer.subarray(0, 5).toString("latin1") === "%PDF-";
+  // DOCX is a ZIP container: "PK\x03\x04"
+  if (type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+  }
+  // Plain text must not contain NUL bytes (a cheap binary-file check)
+  if (type === "text/plain") return !buffer.subarray(0, 8192).includes(0);
+  return false;
+}
+
+class FileReadError extends Error {}
+
 async function extractText(file: File): Promise<string> {
   const type = file.type;
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (!matchesSignature(type, buffer)) {
+    throw new FileReadError("This file doesn't look like a real PDF, DOCX or TXT. Try exporting it again.");
+  }
 
   if (type === "text/plain") {
     return buffer.toString("utf-8");
@@ -43,65 +67,50 @@ async function extractText(file: File): Promise<string> {
   throw new Error(`Unsupported file type: ${type}`);
 }
 
-// ─── OpenAI calls ─────────────────────────────────────────────────────────────
+// ─── AI calls ─────────────────────────────────────────────────────────────────
 
 async function optimizeResume(
-  client: OpenAI,
   resumeText: string,
   jobDescription: string
 ) {
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert resume writer and ATS optimization specialist.
+  const res = await generateJSON(`You are an expert resume writer and ATS optimization specialist.
 
 Your task: Rewrite the resume to maximize ATS compatibility with the job description.
 
 Rules:
-- ONLY rewrite existing content. Do NOT fabricate experience, skills, or achievements.
-- Every experience bullet MUST follow this exact formula: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
-  Example: "Reduced deployment time by 40% by migrating CI pipeline to GitHub Actions."
-- If no exact metric exists in the original, infer a reasonable one from context (e.g. ~30%, 5×, $X0K, X team members).
+- Every experience bullet should follow: [Strong Action Verb] + [Specific What You Did] + [Outcome].
+  Example: "Cut deployment time by 40% by migrating the CI pipeline to GitHub Actions." (only if the 40% is in the original — otherwise "by [X%]").
 - NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in', 'Participated in', 'Contributed to'.
 - Each bullet must be one tight sentence — aim for 15–22 words.
-- Naturally incorporate relevant keywords from the job description.
+- Use the job description's wording for skills and experience the candidate genuinely has.
 - Keep all dates, job titles, and company names exactly as they are.
 - Remove tables, columns, headers/footers — use clean single-column plain text.
 - Format for ATS: clear section headers (EXPERIENCE, EDUCATION, SKILLS, etc.)
+
+${NO_FABRICATION_RULES}
 
 Return ONLY valid JSON with this exact structure:
 {
   "optimized_resume": "<full rewritten resume as plain text>",
   "changes_made": ["<change 1>", "<change 2>"],
-  "keywords_added": ["<keyword 1>", "<keyword 2>"]
+  "keywords_added": ["<JD keyword now used for a skill the original already showed>"]
 }
 
 ORIGINAL RESUME:
 ${resumeText}
 
 JOB DESCRIPTION:
-${jobDescription}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.3,
-  });
-  return parseAIResponse(res);
+${jobDescription}`, { temperature: 0.3 });
+  return res;
 }
 
 async function scoreResume(
-  client: OpenAI,
   resumeText: string,
   jobDescription: string
 ) {
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert ATS resume analyst. Analyze the resume against the job description.
+  const res = await generateJSON(`You are an expert ATS resume analyst. Analyze the resume against the job description.
+
+${PLACEHOLDER_NOTE}
 
 Scoring criteria:
 - keyword_coverage: how many of the JD's required keywords/skills appear in the resume
@@ -130,19 +139,70 @@ RESUME:
 ${resumeText}
 
 JOB DESCRIPTION:
-${jobDescription}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.1,
+${jobDescription}`, { temperature: 0.1 });
+  return res;
+}
+
+// ─── Deterministic keyword coverage ──────────────────────────────────────────
+//
+// The model's keyword judgement varies run to run. To make before/after comparable and
+// explainable, we take the keyword list the model found in the JD once, then check both
+// resumes against that same list in code.
+
+type Score = Record<string, unknown>;
+
+function hasKeyword(text: string, keyword: string): boolean {
+  const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!escaped) return false;
+  return new RegExp(`(^|[^a-z0-9])${escaped}($|[^a-z0-9])`, "i").test(text);
+}
+
+function applyKeywordCoverage(score: Score, text: string, universe: string[]): Score {
+  if (universe.length === 0) return score;
+  const matched = universe.filter((k) => hasKeyword(text, k));
+  const missing = universe.filter((k) => !hasKeyword(text, k));
+  const keywordCoverage = Math.round((matched.length / universe.length) * 100);
+  const skills = Number(score.skills_alignment) || 0;
+  const formatting = Number(score.formatting_compliance) || 0;
+  return {
+    ...score,
+    keyword_coverage: keywordCoverage,
+    matched_keywords: matched,
+    missing_keywords: missing,
+    overall_score: Math.round((keywordCoverage + skills + formatting) / 3),
+  };
+}
+
+function keywordUniverse(score: Score): string[] {
+  const all = [
+    ...((score.matched_keywords as string[]) ?? []),
+    ...((score.missing_keywords as string[]) ?? []),
+  ].filter((k) => typeof k === "string" && k.trim().length > 0);
+  const seen = new Set<string>();
+  return all.filter((k) => {
+    const key = k.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
-  return parseAIResponse(res);
+}
+
+/** General mode: the overall score is the plain average of the four sub-scores, computed here. */
+function withQualityAverage(score: Score): Score {
+  const parts = [score.clarity, score.action_language, score.structure, score.completeness].map(Number);
+  if (parts.some((n) => !Number.isFinite(n))) return score;
+  return { ...score, overall_score: Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) };
+}
+
+/** Drops "changes made" entries that describe claims the guard removed. */
+function withoutRemoved(changes: string[], removed: string[]): string[] {
+  if (!removed.length) return changes;
+  return changes.filter((c) => !removed.some((t) => hasTerm(c, t)));
 }
 
 // ─── Shortlist assessment ─────────────────────────────────────────────────────
 
 async function assessResume(
-  client: OpenAI,
   optimizedResume: string,
   jobDescription: string | null,
   mode: "targeted" | "general"
@@ -151,6 +211,8 @@ async function assessResume(
 
   const prompt = isTargeted
     ? `You are a brutally honest senior recruiter with 15+ years of experience. Assess this candidate's resume against the job description and give a frank, constructive shortlist assessment.
+
+${PLACEHOLDER_NOTE}
 
 Be specific. Reference actual content from the resume. Do NOT give generic advice.
 
@@ -190,6 +252,8 @@ JOB DESCRIPTION:
 ${jobDescription}`
     : `You are a brutally honest senior career coach. Assess this resume for general professional quality and market readiness.
 
+${PLACEHOLDER_NOTE}
+
 Be specific. Reference actual content. Do NOT give generic advice.
 
 Return ONLY valid JSON:
@@ -212,26 +276,15 @@ Rules:
 RESUME:
 ${optimizedResume}`;
 
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-  });
-  return parseAIResponse(res);
+  const res = await generateJSON(prompt, { temperature: 0.2 });
+  return res;
 }
 
 async function generateCoverLetter(
-  client: OpenAI,
   optimizedResume: string,
   jobDescription: string
 ) {
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert career coach and professional writer.
+  const res = await generateJSON(`You are an expert career coach and professional writer.
 
 Write a compelling, personalized cover letter based on the candidate's experience and the JD.
 
@@ -242,6 +295,7 @@ Rules:
 - Do NOT use generic filler phrases like "I am a hard worker" or "team player".
 - 3-4 paragraphs maximum.
 - End with a professional sign-off: "Sincerely," followed by the candidate's full name on the next line.
+- Only mention experience, skills and results that appear in the resume. If the resume contains [placeholder] brackets, keep them as-is rather than inventing the value.
 
 Return ONLY valid JSON: { "cover_letter": "<full cover letter text>" }
 
@@ -249,13 +303,8 @@ CANDIDATE RESUME:
 ${optimizedResume}
 
 JOB DESCRIPTION:
-${jobDescription}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.5,
-  });
-  return parseAIResponse(res);
+${jobDescription}`, { temperature: 0.5 });
+  return res;
 }
 
 // ─── General mode (no JD) functions ─────────────────────────────────────────
@@ -263,7 +312,6 @@ ${jobDescription}`,
 // ─── Assessment-driven refinement ────────────────────────────────────────────
 
 async function refineWithAssessment(
-  client: OpenAI,
   optimizedResume: string,
   assessment: Record<string, unknown>,
   jobDescription: string | null
@@ -271,72 +319,57 @@ async function refineWithAssessment(
   const quickWins = (assessment.quick_wins as string[])
     .map((w, i) => `${i + 1}. ${w}`)
     .join("\n");
-  const gaps = ((assessment.critical_gaps as string[]) ?? [])
-    .map((g) => `- ${g}`)
-    .join("\n");
+  // Critical gaps are deliberately NOT passed to the rewriter: a real gap can't be fixed by
+  // rewording, and asking to "address" it invited invented experience. Gaps stay in the review.
   const jdSection = jobDescription
     ? `\nJOB DESCRIPTION (for keyword context):\n${jobDescription}`
     : "";
 
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert resume writer. This resume has already been ATS-optimized, but a recruiter assessment identified specific improvements. Apply ALL of them to produce the definitive final version.
+  const res = await generateJSON(`You are an expert resume writer. This resume has already been ATS-optimized, but a recruiter assessment identified specific improvements. Apply ALL of them to produce the definitive final version.
 
-IMPROVEMENTS TO APPLY:
-${gaps ? `Critical gaps to address:\n${gaps}\n` : ""}
-Quick wins to implement:
+IMPROVEMENTS TO APPLY (wording and structure only):
 ${quickWins}
 
 Rules:
-- Apply EVERY quick win and address EVERY critical gap where possible within the existing content.
-- Do NOT fabricate experience, companies, dates, qualifications, or skills not present in the original.
-- Every experience bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
-  If no exact metric exists in the current text, infer a credible one from context (e.g. "supporting 500+ daily users", "reducing processing time by ~25%").
+- Apply each quick win only as far as the existing content supports it. Skip any improvement that would need facts the resume does not contain.
+- Skills the job asks for that the resume doesn't show are real gaps: never add them, or anything implying them.
+- Keep any existing [placeholder] brackets so the candidate can fill them in.
+- Every experience bullet should follow: [Strong Action Verb] + [Specific What You Did] + [Outcome].
 - NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in'.
 - Each bullet should be one tight sentence — 15–22 words.
 - Maintain clean single-column ATS formatting: clear section headers, no tables/columns.
 - Keep all dates, job titles, and company names exactly as they are.
 - The result should be the strongest possible honest version of this resume.
 
+${NO_FABRICATION_RULES}
+
 Return ONLY valid JSON:
 {
   "refined_resume": "<full final resume as plain text>",
-  "improvements_applied": ["<specific change made>", "<change>"]
+  "improvements_applied": ["<specific change made>", "<change>"],
+  "skipped": ["<suggestion not applied because it needs facts the resume lacks>"]
 }
 
 CURRENT OPTIMIZED RESUME:
-${optimizedResume}${jdSection}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.3,
-  });
-  return parseAIResponse(res);
+${optimizedResume}${jdSection}`, { temperature: 0.3 });
+  return res;
 }
 
 
-async function optimizeResumeGeneral(client: OpenAI, resumeText: string) {
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert resume writer. Improve this resume for general quality — clarity, action language, structure, and completeness.
+async function optimizeResumeGeneral(resumeText: string) {
+  const res = await generateJSON(`You are an expert resume writer. Improve this resume for general quality — clarity, action language, structure, and completeness.
 
 Rules:
-- ONLY rewrite existing content. Do NOT fabricate experience, skills, or achievements.
-- Every experience bullet MUST follow: [Strong Action Verb] + [Specific What You Did] + [Measurable Outcome].
-  Example: "Cut customer support resolution time by 30% by building an internal knowledge-base tool."
-- If no exact metric exists, infer a reasonable one from context (e.g. ~20%, 3×, X team members, $X0K budget).
+- Every experience bullet should follow: [Strong Action Verb] + [Specific What You Did] + [Outcome].
+  Example: "Cut support resolution time by [X%] by building an internal knowledge-base tool."
 - NEVER start a bullet with: 'Responsible for', 'Helped', 'Assisted', 'Worked on', 'Involved in', 'Participated in'.
 - Each bullet must be one tight sentence — aim for 15–22 words.
 - Improve structure and section ordering for readability.
 - Remove tables, columns, graphics — use clean single-column plain text.
 - Use clear section headers (EXPERIENCE, EDUCATION, SKILLS, SUMMARY, etc.)
 - Keep all dates, job titles, and company names exactly as they are.
+
+${NO_FABRICATION_RULES}
 
 Return ONLY valid JSON:
 {
@@ -345,22 +378,14 @@ Return ONLY valid JSON:
 }
 
 RESUME:
-${resumeText}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.3,
-  });
-  return parseAIResponse(res);
+${resumeText}`, { temperature: 0.3 });
+  return res;
 }
 
-async function scoreResumeGeneral(client: OpenAI, resumeText: string) {
-  const res = await client.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "user",
-        content: `You are an expert resume coach. Evaluate this resume on general quality — not for a specific job.
+async function scoreResumeGeneral(resumeText: string) {
+  const res = await generateJSON(`You are an expert resume coach. Evaluate this resume on general quality — not for a specific job.
+
+${PLACEHOLDER_NOTE}
 
 Scoring criteria:
 - clarity: Is the resume easy to read? Are sentences clear, concise, and free of jargon? (0-100)
@@ -384,31 +409,30 @@ Return ONLY valid JSON:
 }
 
 RESUME:
-${resumeText}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.1,
-  });
-  return parseAIResponse(res);
+${resumeText}`, { temperature: 0.1 });
+  return res;
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { detail: "OPENAI_API_KEY is not set. Add it to .env.local." },
-        { status: 500 }
-      );
+    const notConfigured = aiNotConfigured();
+    if (notConfigured) {
+      return NextResponse.json({ detail: notConfigured }, { status: 500 });
     }
+
+    const limited = await rateLimit(req, "ai");
+    if (limited) return limited;
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const jobDescription = formData.get("job_description") as string | null;
+    // Trimmed; ignored entirely in general (Just polish) mode
+    const rawJobDescription = ((formData.get("job_description") as string | null) ?? "").trim();
     const mode = (formData.get("mode") as string | null) ?? "targeted";
+    if (mode !== "targeted" && mode !== "general") {
+      return NextResponse.json({ detail: "Unknown mode." }, { status: 400 });
+    }
 
     if (!file) {
       return NextResponse.json(
@@ -431,9 +455,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (mode === "targeted" && !jobDescription) {
+    const jobDescription = mode === "targeted" ? rawJobDescription : null;
+
+    if (mode === "targeted" && (jobDescription ?? "").length < MIN_JD_CHARS) {
       return NextResponse.json(
-        { detail: "Missing job_description for targeted mode." },
+        { detail: `Paste the job description (at least ${MIN_JD_CHARS} characters) to match against a job, or choose Just polish.` },
         { status: 400 }
       );
     }
@@ -445,7 +471,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const resumeText = await extractText(file);
+    let resumeText: string;
+    try {
+      resumeText = await extractText(file);
+    } catch (err) {
+      console.error("[optimize route] extract", err);
+      return NextResponse.json(
+        {
+          detail:
+            err instanceof FileReadError
+              ? err.message
+              : "We couldn't read this file. Try saving it again as a PDF or DOCX.",
+        },
+        { status: 422 }
+      );
+    }
 
     if (resumeText.trim().length < 50) {
       return NextResponse.json(
@@ -461,89 +501,116 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const client = new OpenAI({ apiKey });
-
     if (mode === "general") {
       // General mode: no JD — score + optimize independently, no cover letter
       const [scoreBefore, optimizeResult] = await Promise.all([
-        scoreResumeGeneral(client, resumeText),
-        optimizeResumeGeneral(client, resumeText),
+        scoreResumeGeneral(resumeText),
+        optimizeResumeGeneral(resumeText),
       ]);
 
       const optResult = optimizeResult as Record<string, unknown>;
 
-      const [scoreAfter, assessment] = await Promise.all([
-        scoreResumeGeneral(client, optResult.optimized_resume as string),
-        assessResume(client, optResult.optimized_resume as string, null, "general"),
-      ]);
+      const assessment = await assessResume(optResult.optimized_resume as string, null, "general");
 
       // Step 3 — apply assessment fixes to produce the final polished resume
       const refineResult = await refineWithAssessment(
-        client,
         optResult.optimized_resume as string,
         assessment as Record<string, unknown>,
         null
       );
 
       const refResult = refineResult as Record<string, unknown>;
+      const { text: finalResume, removed } = await verifyClaims(
+        stripInventedContacts((refResult.refined_resume as string) ?? (optResult.optimized_resume as string), resumeText),
+        resumeText
+      );
+
+      // Score the FINAL resume the user receives
+      const scoreAfter = withQualityAverage((await scoreResumeGeneral(finalResume)) as Score);
 
       return NextResponse.json({
         mode: "general",
-        score_before: scoreBefore,
+        score_before: withQualityAverage(scoreBefore as Score),
         score_after: scoreAfter,
-        optimized_resume: refResult.refined_resume ?? optResult.optimized_resume,
-        changes_made: [
-          ...((optResult.changes_made as string[]) ?? []),
-          ...((refResult.improvements_applied as string[]) ?? []),
-        ],
+        optimized_resume: finalResume,
+        changes_made: withoutRemoved(
+          [...((optResult.changes_made as string[]) ?? []), ...((refResult.improvements_applied as string[]) ?? [])],
+          removed
+        ),
         keywords_added: [],
         cover_letter: "",
         assessment,
       });
     }
 
-    // Targeted mode — existing flow
+    // Targeted mode
     // Step 1 — score original + optimize in parallel (both only need original text + JD)
-    const [scoreBefore, optimizeRaw] = await Promise.all([
-      scoreResume(client, resumeText, jobDescription!),
-      optimizeResume(client, resumeText, jobDescription!),
+    const [scoreBeforeRaw, optimizeRaw] = await Promise.all([
+      scoreResume(resumeText, jobDescription!),
+      optimizeResume(resumeText, jobDescription!),
     ]);
 
     const optTargeted = optimizeRaw as Record<string, unknown>;
 
-    // Step 2 — score the optimized resume + generate cover letter + assess in parallel
-    const [scoreAfter, coverResult, assessment] = await Promise.all([
-      scoreResume(client, optTargeted.optimized_resume as string, jobDescription!),
-      generateCoverLetter(client, optTargeted.optimized_resume as string, jobDescription!),
-      assessResume(client, optTargeted.optimized_resume as string, jobDescription!, "targeted"),
-    ]);
+    // Step 2 — recruiter assessment of the optimized draft
+    const assessment = await assessResume(
+      optTargeted.optimized_resume as string,
+      jobDescription!,
+      "targeted"
+    );
 
-    // Step 3 — apply every assessment fix to produce the definitive final resume
-    const refineResult = await refineWithAssessment(
-      client,
+    // Step 3 — apply the assessment's fixes to produce the final resume
+    const refTargeted = (await refineWithAssessment(
       optTargeted.optimized_resume as string,
       assessment as Record<string, unknown>,
       jobDescription!
+    )) as Record<string, unknown>;
+
+    // Job skills the candidate doesn't have: these must never appear as claims
+    const universe = keywordUniverse(scoreBeforeRaw as Score);
+    const heatmap = ((assessment as Record<string, unknown>).skills_heatmap as { skill?: string }[] | undefined) ?? [];
+    const gapTerms = [...universe, ...heatmap.map((h) => h.skill ?? "")].filter((t) => t && !supports(resumeText, t));
+
+    const { text: finalResume, removed } = await verifyClaims(
+      stripInventedContacts((refTargeted.refined_resume as string) ?? (optTargeted.optimized_resume as string), resumeText),
+      resumeText,
+      { gapTerms }
     );
 
-    const refTargeted = refineResult as Record<string, unknown>;
+    // Step 4 — score and write the cover letter from the FINAL resume the user receives
+    const [scoreAfterRaw, coverResult] = await Promise.all([
+      scoreResume(finalResume, jobDescription!),
+      generateCoverLetter(finalResume, jobDescription!),
+    ]);
+
+    // The letter may name the company and role (from the job ad) but not skills the resume lacks
+    const { text: coverLetter } = await verifyClaims(
+      String((coverResult as Record<string, unknown>).cover_letter ?? ""),
+      `${finalResume}\n${jobDescription}`,
+      { gapTerms, kind: "cover letter", factSource: finalResume }
+    );
+
+    // Same keyword list for both scores, checked in code
+    const scoreBefore = applyKeywordCoverage(scoreBeforeRaw as Score, resumeText, universe);
+    const scoreAfter = applyKeywordCoverage(scoreAfterRaw as Score, finalResume, universe);
 
     return NextResponse.json({
       mode: "targeted",
       score_before: scoreBefore,
       score_after: scoreAfter,
-      optimized_resume: refTargeted.refined_resume ?? optTargeted.optimized_resume,
-      changes_made: [
-        ...((optTargeted.changes_made as string[]) ?? []),
-        ...((refTargeted.improvements_applied as string[]) ?? []),
-      ],
-      keywords_added: (optTargeted.keywords_added as string[]) ?? [],
-      cover_letter: (coverResult as Record<string, unknown>).cover_letter ?? "",
+      optimized_resume: finalResume,
+      changes_made: withoutRemoved(
+        [...((optTargeted.changes_made as string[]) ?? []), ...((refTargeted.improvements_applied as string[]) ?? [])],
+        removed
+      ),
+      // Only keywords the candidate genuinely has
+      keywords_added: ((optTargeted.keywords_added as string[]) ?? []).filter((k) => supports(resumeText, k)),
+      cover_letter: coverLetter,
       assessment,
     });
   } catch (err: unknown) {
     console.error("[optimize route]", err);
-    const { message, status } = handleOpenAIError(err);
+    const { message, status } = handleAIError(err);
     return NextResponse.json({ detail: message }, { status });
   }
 }

@@ -54,3 +54,13 @@ backend/outputs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Env files (all variants; templates stay tracked)
+.env*
+!.env.example
+
+# Local tooling / scratch
+.claude/
+.expo/
+open-on-phone-qr.png
+*.skill

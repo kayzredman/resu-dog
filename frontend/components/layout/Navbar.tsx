@@ -18,7 +18,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-[var(--overlay)] backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-line bg-[var(--overlay)] pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -27,7 +27,7 @@ export default function Navbar() {
               <PawPrint className="h-4 w-4 text-white" />
             </div>
             <span className="text-lg font-bold tracking-tight">
-              resu<span className="text-primary">-dog</span>
+              resu<span className="text-primary-ink">-dog</span>
             </span>
           </Link>
 
@@ -50,8 +50,8 @@ export default function Navbar() {
             <Link
               href="/build"
               className={cn(
-                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold transition-all text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 active:bg-primary/10 active:border-primary/40 active:text-primary",
-                pathname === "/build" && "border-primary/40 text-primary bg-primary/5"
+                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold transition-all text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 active:bg-primary/10 active:border-primary/40 active:text-primary-ink",
+                pathname === "/build" && "border-primary/40 text-primary-ink bg-primary/5"
               )}
             >
               <Wand2 className="h-4 w-4" />
@@ -62,8 +62,8 @@ export default function Navbar() {
               className={cn(
                 "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all active:scale-95",
                 pathname === "/optimize"
-                  ? "bg-primary text-white shadow-lg shadow-[rgba(108,99,255,0.35)] active:bg-[#5a52e0]"
-                  : "bg-primary text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-[rgba(108,99,255,0.35)] active:bg-[#5a52e0] active:shadow-none"
+                  ? "bg-primary text-white shadow-lg shadow-[rgba(108,99,255,0.35)] active:bg-primary-dark"
+                  : "bg-primary text-white hover:bg-primary-dark hover:shadow-lg hover:shadow-[rgba(108,99,255,0.35)] active:bg-primary-dark active:shadow-none"
               )}
             >
               <Zap className="h-4 w-4" />
@@ -75,9 +75,10 @@ export default function Navbar() {
           <div className="md:hidden flex items-center gap-2">
             <ThemeToggle />
             <button
-              className="text-foreground-muted hover:text-foreground transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-foreground-muted hover:text-foreground active:bg-foreground/10 transition-colors"
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Toggle menu"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
             >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -92,7 +93,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className="block text-sm text-foreground-muted hover:text-foreground transition-colors py-1"
+                className="flex min-h-11 items-center text-base text-foreground-muted hover:text-foreground transition-colors"
               >
                 {link.label}
               </Link>
@@ -101,8 +102,8 @@ export default function Navbar() {
               href="/build"
               onClick={() => setMenuOpen(false)}
               className={cn(
-                "flex items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-semibold w-full justify-center mt-2 text-foreground-muted hover:text-foreground active:scale-95 active:bg-primary/10 active:border-primary/40 active:text-primary",
-                pathname === "/build" && "border-primary/40 text-primary bg-primary/5"
+                "flex min-h-12 items-center gap-2 rounded-xl border border-line px-4 py-2 text-base font-semibold w-full justify-center mt-2 text-foreground-muted hover:text-foreground active:scale-95 active:bg-primary/10 active:border-primary/40 active:text-primary-ink",
+                pathname === "/build" && "border-primary/40 text-primary-ink bg-primary/5"
               )}
             >
               <Wand2 className="h-4 w-4" />
@@ -111,7 +112,7 @@ export default function Navbar() {
             <Link
               href="/optimize"
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white w-full justify-center mt-2 active:scale-95 active:bg-[#5a52e0] transition-all"
+              className="flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-base font-semibold text-white w-full justify-center mt-2 active:scale-95 active:bg-primary-dark transition-all"
             >
               <Zap className="h-4 w-4" />
               Optimize Resume

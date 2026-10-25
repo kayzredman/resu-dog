@@ -29,9 +29,9 @@ interface ScoreCardProps {
 }
 
 function getScoreColor(score: number) {
-  if (score >= 75) return "#22c55e";
-  if (score >= 50) return "#f59e0b";
-  return "#ef4444";
+  if (score >= 75) return "var(--success)";
+  if (score >= 50) return "var(--warning)";
+  return "var(--danger)";
 }
 
 function ScoreRing({ score, label, color }: { score: number; label: string; color: string }) {
@@ -49,7 +49,7 @@ function ScoreRing({ score, label, color }: { score: number; label: string; colo
             cy="50"
             r={radius}
             fill="none"
-            stroke={color}
+            style={{ stroke: color }}
             strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -114,7 +114,7 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
       <div className="rounded-2xl border border-line bg-surface p-6">
         <div className="flex flex-col items-center gap-3">
           <span className="text-xs font-semibold uppercase tracking-widest text-foreground-muted">
-            Optimized ATS Score
+            {mode === "general" ? "Resume quality score" : "Job-match score"}
           </span>
 
           <div className="relative h-[140px] w-[140px]">
@@ -123,7 +123,7 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
               <motion.circle
                 cx="70" cy="70" r={heroRadius}
                 fill="none"
-                stroke={afterColor}
+                style={{ stroke: afterColor }}
                 strokeWidth="10"
                 strokeLinecap="round"
                 strokeDasharray={heroCircumference}
@@ -151,7 +151,7 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.1 }}
-              className="flex items-center gap-2 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/25 px-4 py-1.5 text-sm font-bold text-[#22c55e]"
+              className="flex items-center gap-2 rounded-full bg-success/10 border border-success/25 px-4 py-1.5 text-sm font-bold text-success"
             >
               <TrendingUp className="h-4 w-4" />
               +{improvement} pts improvement from original
@@ -194,6 +194,11 @@ export default function ScoreCard({ before, after, mode = "targeted", isLocked =
       {/* Score breakdown bars */}
         <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
         <h3 className="font-semibold text-sm mb-2">Score Breakdown</h3>
+        <p className="text-xs text-foreground-muted leading-relaxed -mt-1">
+          {mode === "general"
+            ? "An AI estimate of general resume quality — a guide, not a guarantee."
+            : "Keyword coverage is counted directly from the job description's keywords. Skills and formatting are AI estimates. No tool can tell you exactly how a specific employer's ATS will rank you."}
+        </p>
         {mode === "general" ? (
           <>
             <ScoreBar label="Clarity" icon={AlignLeft} value={after.clarity ?? 0} />

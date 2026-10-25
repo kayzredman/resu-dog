@@ -10,15 +10,15 @@ const steps = [
     title: "Upload your resume",
     description:
       "Drop your resume in PDF, DOCX, or TXT format. Paste the job description you're targeting.",
-    color: "#6c63ff",
+    color: "var(--primary-ink)",
   },
   {
     icon: Cpu,
     step: "02",
     title: "AI optimizes it",
     description:
-      "GPT-4o rewrites your experience with strong action verbs, adds ATS keywords, and cleans the formatting. Your score jumps.",
-    color: "#00d4aa",
+      "AI rewrites your experience with strong action verbs, uses the job's keywords for skills you really have, and cleans the formatting. Missing numbers are flagged for you to fill in, never made up.",
+    color: "var(--accent)",
   },
   {
     icon: Download,
@@ -26,7 +26,7 @@ const steps = [
     title: "Download & apply",
     description:
       "Get your optimized resume and a personalized cover letter. See your before/after score. Apply with confidence.",
-    color: "#6c63ff",
+    color: "var(--primary-ink)",
   },
 ];
 
@@ -47,14 +47,14 @@ export default function HowItWorks() {
           {/* Connector line (desktop) */}
           <div
             aria-hidden
-            className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-[#6c63ff]/30 via-[#00d4aa]/40 to-[#6c63ff]/30"
+            className="hidden md:block absolute top-10 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-gradient-to-r from-primary/30 via-accent/40 to-primary/30"
           />
 
           {steps.map((step, i) => (
             <motion.div
               key={step.step}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ y: 20 }}
+              whileInView={{ y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15, duration: 0.5 }}
               className="relative rounded-2xl border border-line bg-surface p-7"
@@ -62,8 +62,8 @@ export default function HowItWorks() {
               <div
                 className="inline-flex h-12 w-12 items-center justify-center rounded-xl mb-5"
                 style={{
-                  background: `${step.color}18`,
-                  border: `1px solid ${step.color}30`,
+                  background: `color-mix(in srgb, ${step.color} 9%, transparent)`,
+                  border: `1px solid color-mix(in srgb, ${step.color} 19%, transparent)`,
                 }}
               >
                 <step.icon className="h-5 w-5" style={{ color: step.color }} />

@@ -28,10 +28,10 @@ const plans = [
     price: "$12",
     period: "/month",
     description: "For active job seekers. Everything included.",
-    cta: "Start 3-day free trial",
+    cta: "Free during beta — try it",
     ctaHref: "/optimize",
     highlighted: true,
-    badge: "Most popular",
+    badge: "Planned",
     features: [
       { text: "Upload resume (PDF, DOCX, TXT)", included: true },
       { text: "Compatibility score — before & after", included: true },
@@ -53,7 +53,7 @@ export default function Pricing() {
             Simple pricing
           </h2>
           <p className="mt-3 text-foreground-muted">
-            Free to try. Pay only when you want to download.
+            Everything is free while Resu-Dog is in beta. When accounts launch, this is the pricing we plan to use.
           </p>
         </div>
 
@@ -61,8 +61,8 @@ export default function Pricing() {
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ y: 20 }}
+              whileInView={{ y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               className={`relative rounded-2xl p-7 ${
@@ -143,7 +143,7 @@ export default function Pricing() {
                 href={plan.ctaHref}
                 className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all ${
                   plan.highlighted
-                    ? "bg-white text-primary hover:bg-foreground"
+                    ? "bg-white text-primary-ink hover:bg-foreground"
                     : "bg-primary text-white hover:bg-primary-dark shadow-lg shadow-[rgba(108,99,255,0.25)]"
                 }`}
               >

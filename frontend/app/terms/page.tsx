@@ -80,7 +80,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-foreground mb-2">8. Contact</h2>
           <p>
             Questions about these terms? Email us at{" "}
-            <a href="mailto:legal@resu-dog.com" className="text-primary hover:underline">
+            <a href="mailto:legal@resu-dog.com" className="text-primary-ink hover:underline">
               legal@resu-dog.com
             </a>.
           </p>
@@ -89,7 +89,7 @@ export default function TermsPage() {
       </div>
 
       <div className="mt-12 pt-6 border-t border-line">
-        <Link href="/privacy" className="text-sm text-primary hover:underline">
+        <Link href="/privacy" className="text-sm text-primary-ink hover:underline">
           ← Privacy Policy
         </Link>
       </div>

@@ -84,7 +84,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
                   done
                     ? "border-primary bg-primary text-white"
                     : active
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary-ink"
                     : "border-line bg-surface text-foreground-dim"
                 )}
               >
@@ -93,7 +93,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
               <span
                 className={cn(
                   "text-[10px] font-medium hidden sm:block",
-                  active ? "text-primary" : done ? "text-foreground-muted" : "text-foreground-dim"
+                  active ? "text-primary-ink" : done ? "text-foreground-muted" : "text-foreground-dim"
                 )}
               >
                 {step.label}
@@ -245,7 +245,12 @@ export default function BuildPage() {
       const res = await fetch(`${apiBase}/api/v1/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "write", job_description: jobDescription, answers }),
+        body: JSON.stringify({
+          action: "write",
+          job_description: jobDescription,
+          answers,
+          questions: analysis?.questions,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -305,7 +310,7 @@ export default function BuildPage() {
                 onChange={(e) => setJobDescription(e.target.value)}
                 placeholder="Paste the full job description here — the more detail, the better the questions..."
                 rows={12}
-                className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-base sm:text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
               />
               <div className="flex items-center justify-between text-xs text-foreground-muted">
                 <span>Minimum 50 characters</span>
@@ -313,16 +318,16 @@ export default function BuildPage() {
               </div>
 
               {analyzeError && (
-                <div className="flex items-start gap-2.5 rounded-xl border border-[#ef4444]/30 bg-[#ef4444]/10 p-4">
-                  <AlertCircle className="h-4 w-4 text-[#ef4444] mt-0.5 shrink-0" />
-                  <p className="text-sm text-[#ef4444]">{analyzeError}</p>
+                <div className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger/10 p-4">
+                  <AlertCircle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
+                  <p className="text-sm text-danger">{analyzeError}</p>
                 </div>
               )}
 
               <button
                 onClick={handleAnalyze}
                 disabled={jobDescription.trim().length < 50 || analyzing}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark active:scale-[0.98] active:bg-primary-dark active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {analyzing ? (
                   <>
@@ -352,7 +357,7 @@ export default function BuildPage() {
           >
             {/* Role pill */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary-ink">
                 {analysis.role_title}
               </span>
               <span className="rounded-full border border-line px-3 py-1 text-xs text-foreground-muted">
@@ -373,7 +378,7 @@ export default function BuildPage() {
                   <div key={q.id} className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">
                       {q.question}
-                      {q.required && <span className="text-[#ef4444] ml-0.5">*</span>}
+                      {q.required && <span className="text-danger ml-0.5">*</span>}
                     </label>
                     <textarea
                       value={answers[q.id] ?? ""}
@@ -382,7 +387,7 @@ export default function BuildPage() {
                       }
                       placeholder={q.placeholder}
                       rows={q.section === "Work Experience" ? 4 : 2}
-                      className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                      className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-base sm:text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                     />
                     <div className="flex justify-end">
                       {!isFactualField(q) && (
@@ -390,7 +395,7 @@ export default function BuildPage() {
                         type="button"
                         onClick={() => handleAssist(q)}
                         disabled={assistingQId !== null}
-                        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-xs text-primary-ink hover:text-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {assistingQId === q.id ? (
                           <><Loader2 className="h-3 w-3 animate-spin" />Getting suggestion&hellip;</>
@@ -416,7 +421,7 @@ export default function BuildPage() {
               <button
                 onClick={() => setWizardStep(2)}
                 disabled={!requiredAnswered}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-dark active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-dark active:scale-[0.98] active:bg-primary-dark active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Review answers
                 <ChevronRight className="h-4 w-4" />
@@ -453,9 +458,9 @@ export default function BuildPage() {
             </div>
 
             {buildError && (
-              <div className="flex items-start gap-2.5 rounded-xl border border-[#ef4444]/30 bg-[#ef4444]/10 p-4">
-                <AlertCircle className="h-4 w-4 text-[#ef4444] mt-0.5 shrink-0" />
-                <p className="text-sm text-[#ef4444]">{buildError}</p>
+              <div className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger/10 p-4">
+                <AlertCircle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
+                <p className="text-sm text-danger">{buildError}</p>
               </div>
             )}
 
@@ -470,7 +475,7 @@ export default function BuildPage() {
               <button
                 onClick={handleBuild}
                 disabled={building}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark active:scale-[0.98] active:bg-primary-dark active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {building ? (
                   <>
@@ -534,7 +539,7 @@ export default function BuildPage() {
                 <h2 className="font-semibold text-lg">Your CV is ready</h2>
                 <p className="text-sm text-foreground-muted">
                   Tailored for{" "}
-                  <span className="text-primary font-medium">{analysis?.role_title}</span>
+                  <span className="text-primary-ink font-medium">{analysis?.role_title}</span>
                 </p>
               </div>
               <button

@@ -21,7 +21,7 @@ export default function Footer() {
                 <PawPrint className="h-4 w-4 text-white" />
               </div>
               <span className="text-lg font-bold">
-                resu<span className="text-primary">-dog</span>
+                resu<span className="text-primary-ink">-dog</span>
               </span>
             </Link>
             <p className="text-sm text-foreground-muted max-w-xs leading-relaxed">
@@ -32,7 +32,7 @@ export default function Footer() {
                 href="https://github.com/kayzredman/resu-dog"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-foreground-muted hover:text-foreground transition-colors"
+                className="-ml-3 flex h-11 w-11 items-center justify-center text-foreground-muted hover:text-foreground transition-colors"
                 aria-label="GitHub"
               >
                 <GithubIcon />
@@ -43,7 +43,7 @@ export default function Footer() {
           {/* Product */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">Product</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-0 sm:space-y-2">
               {[
                 { label: "How it works", href: "/#how-it-works" },
                 { label: "Features", href: "/#features" },
@@ -54,7 +54,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+                    className="inline-flex min-h-11 items-center text-sm text-foreground-muted hover:text-foreground transition-colors sm:min-h-0"
                   >
                     {link.label}
                   </Link>
@@ -66,7 +66,7 @@ export default function Footer() {
           {/* Legal */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">Legal</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-0 sm:space-y-2">
               {[
                 { label: "Privacy Policy", href: "/privacy" },
                 { label: "Terms of Service", href: "/terms" },
@@ -74,7 +74,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-foreground-muted hover:text-foreground transition-colors"
+                    className="inline-flex min-h-11 items-center text-sm text-foreground-muted hover:text-foreground transition-colors sm:min-h-0"
                   >
                     {link.label}
                   </Link>
@@ -89,8 +89,8 @@ export default function Footer() {
             © {new Date().getFullYear()} Resu-Dog. All rights reserved.
           </p>
           <p className="text-xs text-foreground-muted">
-            Your data is never stored or used for training.{" "}
-            <Link href="/privacy" className="text-[#6c63ff] hover:underline">
+            Nothing is stored unless you share a profile. Never used for AI training.{" "}
+            <Link href="/privacy" className="inline-flex min-h-11 items-center text-primary-ink hover:underline sm:min-h-0">
               Learn more
             </Link>
           </p>

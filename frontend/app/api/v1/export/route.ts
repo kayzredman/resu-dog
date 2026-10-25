@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { parseAIResponse, handleOpenAIError } from "@/lib/ai-helpers";
+import { aiNotConfigured, generateJSON, handleAIError } from "@/lib/ai-helpers";
+import { verifyClaims } from "@/lib/claim-guard";
+import { NO_FABRICATION_RULES, stripInventedContacts } from "@/lib/prompt-rules";
+import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/v1/export
 // Body: { resume: string; format: "linkedin" | "wes" | "uk" }
@@ -79,9 +81,12 @@ UK CV rules to apply:
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ detail: "OPENAI_API_KEY is not set." }, { status: 500 });
+    const limited = await rateLimit(req, "ai-light");
+    if (limited) return limited;
+
+    const notConfigured = aiNotConfigured();
+    if (notConfigured) {
+      return NextResponse.json({ detail: notConfigured }, { status: 500 });
     }
 
     const { resume, format } = await req.json() as { resume: string; format: string };
@@ -96,24 +101,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: `Unknown format: ${format}` }, { status: 400 });
     }
 
-    const client = new OpenAI({ apiKey });
+    const res = (await generateJSON(
+      `${FORMAT_PROMPTS[format]}\n\nReformat only. A new format is no reason to add claims: no new strengths, traits, results or goals the resume doesn't state.\n\n${NO_FABRICATION_RULES}\n\nRESUME:\n${resume}`,
+      { temperature: 0.3 }
+    )) as Record<string, unknown>;
 
-    const res = await client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: `${FORMAT_PROMPTS[format]}\n\nRESUME:\n${resume}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.3,
-    });
-
-    return NextResponse.json(parseAIResponse(res));
+    // Same honesty check as the resume itself
+    if (typeof res.formatted === "string") {
+      res.formatted = (await verifyClaims(stripInventedContacts(res.formatted, resume), resume, { kind: "profile" })).text;
+    }
+    return NextResponse.json(res);
   } catch (err: unknown) {
     console.error("[export route]", err);
-    const { message, status } = handleOpenAIError(err);
+    const { message, status } = handleAIError(err);
     return NextResponse.json({ detail: message }, { status });
   }
 }

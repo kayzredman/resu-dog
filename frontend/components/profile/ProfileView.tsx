@@ -5,7 +5,7 @@ import { motion, useInView } from "framer-motion";
 import {
   MapPin, Mail, Download, Send, Briefcase,
   GraduationCap, Star, Award, CheckCircle2, PawPrint, ExternalLink,
-  Share2, Check, Link2,
+  Share2, Check, Link2, EyeOff, Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { downloadPDF } from "@/lib/pdf";
@@ -37,12 +37,24 @@ export interface ProfileData {
   ats_score?: number;
 }
 
+export interface ShareOptions {
+  showEmail: boolean;
+  allowCvDownload: boolean;
+  openToWork: boolean;
+}
+
 export interface ProfileViewProps {
   profile: ProfileData;
   /** Resume text for PDF download — pass null if not available (public page) */
   resumeText?: string | null;
   /** If set, show the "Share Profile" button and use this handler */
-  onShare?: () => Promise<string | null>;
+  onShare?: (options: ShareOptions) => Promise<string | null>;
+  /** URL of the currently published copy, if the owner has shared one */
+  publishedUrl?: string | null;
+  /** If set, show an "Unpublish" button for the published copy */
+  onUnpublish?: () => Promise<void>;
+  /** Initial "Open to Work" state (public pages show exactly what the owner chose) */
+  openToWork?: boolean;
   /** If set, this is a public shared profile — hide edit-oriented controls */
   isPublic?: boolean;
 }
@@ -59,7 +71,7 @@ function initials(name: string) {
 
 function avatarColor(name: string) {
   const colors = [
-    "#6c63ff", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ef4444",
+    "var(--primary-ink)", "#ec4899", "var(--warning)", "#10b981", "#3b82f6", "#8b5cf6", "var(--danger)",
   ];
   let hash = 0;
   for (const c of name) hash = (hash * 31 + c.charCodeAt(0)) % colors.length;
@@ -93,10 +105,10 @@ function Counter({ value, suffix = "" }: { value: number; suffix?: string }) {
 function SkillPill({ skill, index }: { skill: string; index: number }) {
   return (
     <motion.span
-      initial={{ opacity: 0, scale: 0.85 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ scale: 0.85 }}
+      animate={{ scale: 1 }}
       transition={{ delay: index * 0.04, duration: 0.2 }}
-      className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+      className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary-ink"
     >
       {skill}
     </motion.span>
@@ -118,8 +130,8 @@ function TimelineEntry({
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, x: -18 }}
-      animate={inView ? { opacity: 1, x: 0 } : {}}
+      initial={{ x: -18 }}
+      animate={inView ? { x: 0 } : {}}
       transition={{ delay: index * 0.12, duration: 0.35 }}
       className="relative pl-6"
     >
@@ -130,11 +142,11 @@ function TimelineEntry({
       <div className="pb-8">
         <p className="text-xs text-foreground-muted mb-0.5">{role.period}</p>
         <h4 className="font-semibold text-sm">{role.title}</h4>
-        <p className="text-xs text-primary font-medium mb-2">{role.company}</p>
+        <p className="text-xs text-primary-ink font-medium mb-2">{role.company}</p>
         <ul className="space-y-1.5">
           {role.bullets.map((b, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-foreground-soft leading-relaxed">
-              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary-ink shrink-0 mt-0.5" />
               {b}
             </li>
           ))}
@@ -158,13 +170,13 @@ function Section({ title, icon: Icon, children, delay = 0 }: {
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
+      initial={{ y: 24 }}
+      animate={inView ? { y: 0 } : {}}
       transition={{ delay, duration: 0.4 }}
       className="rounded-2xl border border-line bg-surface p-6"
     >
       <div className="flex items-center gap-2 mb-4">
-        <Icon className="h-4 w-4 text-primary" />
+        <Icon className="h-4 w-4 text-primary-ink" />
         <h3 className="font-semibold text-sm uppercase tracking-widest text-foreground-muted">{title}</h3>
       </div>
       {children}
@@ -174,9 +186,14 @@ function Section({ title, icon: Icon, children, delay = 0 }: {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ProfileView({ profile, resumeText, onShare, isPublic }: ProfileViewProps) {
-  const [openToWork, setOpenToWork] = useState(true);
+export default function ProfileView({
+  profile, resumeText, onShare, publishedUrl, onUnpublish, openToWork: initialOpenToWork = true, isPublic,
+}: ProfileViewProps) {
+  const [openToWork, setOpenToWork] = useState(initialOpenToWork);
   const [shareState, setShareState] = useState<"idle" | "loading" | "copied">("idle");
+  const [showEmail, setShowEmail] = useState(true);
+  const [allowCvDownload, setAllowCvDownload] = useState(false);
+  const [unpublishing, setUnpublishing] = useState(false);
 
   const color = avatarColor(profile.name);
   const initStr = initials(profile.name);
@@ -188,7 +205,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
     if (!onShare || shareState === "loading") return;
     setShareState("loading");
     try {
-      const url = await onShare();
+      const url = await onShare({ showEmail, allowCvDownload, openToWork });
       if (url) {
         await navigator.clipboard.writeText(url);
         setShareState("copied");
@@ -206,8 +223,8 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ y: 20 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.45 }}
         className="rounded-2xl border border-line bg-surface p-8 mb-6"
       >
@@ -225,24 +242,19 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
               {!isPublic ? (
                 <button
                   onClick={() => setOpenToWork((v) => !v)}
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border transition-colors ${
+                  className={`relative rounded-full px-2.5 py-0.5 text-xs font-bold border transition-colors after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] ${
                     openToWork
-                      ? "bg-[#22c55e]/10 border-[#22c55e]/25 text-[#22c55e]"
+                      ? "bg-success/10 border-success/25 text-success"
                       : "bg-foreground/5 border-line text-foreground-muted"
                   }`}
                 >
                   {openToWork ? "● Open to Work" : "○ Not Looking"}
                 </button>
-              ) : (
-                <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border bg-[#22c55e]/10 border-[#22c55e]/25 text-[#22c55e]">
+              ) : openToWork ? (
+                <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold border bg-success/10 border-success/25 text-success">
                   ● Open to Work
                 </span>
-              )}
-              {profile.ats_score && (
-                <span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-[11px] font-bold text-primary">
-                  ATS {profile.ats_score}/100
-                </span>
-              )}
+              ) : null}
             </div>
 
             <p className="text-foreground-muted text-sm font-medium mb-2">{profile.title}</p>
@@ -255,13 +267,13 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
                 </span>
               )}
               {profile.email && (
-                <a href={`mailto:${profile.email}`} className="flex items-center gap-1 hover:text-primary transition-colors">
+                <a href={`mailto:${profile.email}`} className="flex min-h-11 items-center gap-1 hover:text-primary-ink transition-colors">
                   <Mail className="h-3.5 w-3.5" />
                   {profile.email}
                 </a>
               )}
               {profile.linkedin && (
-                <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                <a href={profile.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary-ink transition-colors">
                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
                     <rect x="2" y="9" width="4" height="12" />
@@ -313,11 +325,11 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
                 {profile.education.map((edu, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <GraduationCap className="h-4 w-4 text-primary" />
+                      <GraduationCap className="h-4 w-4 text-primary-ink" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{edu.degree}</p>
-                      <p className="text-xs text-primary font-medium">{edu.institution}</p>
+                      <p className="text-xs text-primary-ink font-medium">{edu.institution}</p>
                       <p className="text-xs text-foreground-muted">{edu.year}</p>
                     </div>
                   </div>
@@ -331,7 +343,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
               <div className="space-y-2">
                 {profile.certifications.map((cert, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm text-foreground-soft">
-                    <Award className="h-3.5 w-3.5 text-[#f59e0b] shrink-0" />
+                    <Award className="h-3.5 w-3.5 text-warning shrink-0" />
                     {cert}
                   </div>
                 ))}
@@ -345,34 +357,25 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
 
           {/* Stats card */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ x: 20 }}
+            animate={{ x: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
             className="rounded-2xl border border-line bg-surface p-5"
           >
             <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground-muted mb-4">At a glance</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-extrabold text-primary">
+                <p className="text-2xl font-extrabold text-primary-ink">
                   <Counter value={profile.years_experience} suffix="+" />
                 </p>
                 <p className="text-[11px] text-foreground-muted mt-0.5">Years exp.</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-extrabold text-primary">
+                <p className="text-2xl font-extrabold text-primary-ink">
                   <Counter value={profile.industries?.length ?? 0} />
                 </p>
                 <p className="text-[11px] text-foreground-muted mt-0.5">Industries</p>
               </div>
-              {profile.ats_score && (
-                <div className="col-span-2 text-center pt-2 border-t border-line">
-                  <p className="text-2xl font-extrabold text-primary">
-                    <Counter value={profile.ats_score} />
-                    <span className="text-base">/100</span>
-                  </p>
-                  <p className="text-[11px] text-foreground-muted mt-0.5">ATS Score</p>
-                </div>
-              )}
             </div>
 
             {profile.industries?.length > 0 && (
@@ -389,27 +392,46 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
 
           {/* CTA card */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ x: 20 }}
+            animate={{ x: 0 }}
             transition={{ delay: 0.3, duration: 0.4 }}
             className="rounded-2xl border border-line bg-surface p-5 space-y-3"
           >
             {profile.email && (
               <a
                 href={`mailto:${profile.email}?subject=I'd love to connect&body=Hi ${profile.name.split(" ")[0]},`}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark active:scale-95 active:bg-[#5a52e0] transition-all"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark active:scale-95 active:bg-primary-dark transition-all"
               >
                 <Send className="h-4 w-4" />
                 Hire Me
               </a>
             )}
 
+            {/* Sharing choices — only on owner's preview page, before publishing */}
+            {onShare && !publishedUrl && (
+              <div className="rounded-xl border border-line bg-background p-3 space-y-2.5">
+                <p className="text-xs font-semibold">Before you share</p>
+                <label className="flex items-center gap-2.5 text-sm text-foreground-soft min-h-11 cursor-pointer">
+                  <input type="checkbox" checked={showEmail} onChange={(e) => setShowEmail(e.target.checked)} className="size-4 accent-[var(--primary)]" />
+                  Show my email (adds a Hire Me button)
+                </label>
+                <label className="flex items-center gap-2.5 text-sm text-foreground-soft min-h-11 cursor-pointer">
+                  <input type="checkbox" checked={allowCvDownload} onChange={(e) => setAllowCvDownload(e.target.checked)} className="size-4 accent-[var(--primary)]" />
+                  Let visitors download my full CV (includes phone and address)
+                </label>
+                <p className="flex items-start gap-1.5 text-xs text-foreground-muted leading-relaxed">
+                  <EyeOff className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  Anyone with the link can view it. It&apos;s hidden from search engines, deleted automatically after 90 days, and you can unpublish it anytime.
+                </p>
+              </div>
+            )}
+
             {/* Share button — only on owner's preview page */}
-            {onShare && (
+            {onShare && !publishedUrl && (
               <button
                 onClick={handleShare}
                 disabled={shareState === "loading"}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#22c55e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#16a34a] active:scale-95 disabled:opacity-60 transition-all"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark active:scale-95 disabled:opacity-60 transition-all"
               >
                 {shareState === "loading" ? (
                   <>
@@ -430,6 +452,33 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
               </button>
             )}
 
+            {/* Published state — owner can copy the link again or take it down */}
+            {publishedUrl && onUnpublish && (
+              <>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(publishedUrl);
+                    setShareState("copied");
+                    setTimeout(() => setShareState("idle"), 2500);
+                  }}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark active:scale-95 transition-all"
+                >
+                  {shareState === "copied" ? <><Check className="h-4 w-4" /> Link Copied!</> : <><Link2 className="h-4 w-4" /> Copy share link</>}
+                </button>
+                <button
+                  onClick={async () => {
+                    setUnpublishing(true);
+                    try { await onUnpublish(); } finally { setUnpublishing(false); }
+                  }}
+                  disabled={unpublishing}
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-danger/40 px-4 py-2.5 text-sm font-semibold text-danger hover:bg-danger/10 active:scale-95 disabled:opacity-60 transition-all"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {unpublishing ? "Unpublishing…" : "Unpublish"}
+                </button>
+              </>
+            )}
+
             {/* Copy link — shown on public page */}
             {isPublic && (
               <button
@@ -438,7 +487,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
                   setShareState("copied");
                   setTimeout(() => setShareState("idle"), 2500);
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
               >
                 {shareState === "copied" ? (
                   <><Check className="h-4 w-4" /> Copied!</>
@@ -453,7 +502,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
                 onClick={() => {
                   downloadPDF(`${profile.name.replace(/\s+/g, "-")}-CV.pdf`, resumeText);
                 }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
               >
                 <Download className="h-4 w-4" />
                 Download CV
@@ -465,7 +514,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
                 href={profile.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-foreground-muted hover:text-foreground hover:border-line-hover active:scale-95 transition-all"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
@@ -480,7 +529,7 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
 
           {/* Viral footer */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
             className="rounded-2xl border border-line bg-surface p-4"
@@ -490,10 +539,10 @@ export default function ProfileView({ profile, resumeText, onShare, isPublic }: 
               className="flex items-center justify-center gap-2 group"
             >
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 group-hover:bg-primary transition-colors">
-                <PawPrint className="h-3.5 w-3.5 text-primary group-hover:text-white transition-colors" />
+                <PawPrint className="h-3.5 w-3.5 text-primary-ink group-hover:text-white transition-colors" />
               </div>
               <span className="text-xs text-foreground-muted group-hover:text-foreground transition-colors">
-                Built with <span className="font-semibold text-primary">resu-dog.com</span>
+                Built with <span className="font-semibold text-primary-ink">resu-dog.com</span>
               </span>
             </Link>
           </motion.div>

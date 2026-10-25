@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Loader2, AlertCircle, Target, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,15 @@ export default function OptimizePage() {
   const [step, setStep] = useState<Step>("idle");
   const [result, setResult] = useState<OptimizeResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // On phones the results stack below the form — bring them into view when work starts and ends
+  useEffect(() => {
+    if (step !== "loading" && step !== "done") return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (step === "done") resultsRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   const canSubmit =
     uploadedFile !== null &&
@@ -125,27 +134,31 @@ export default function OptimizePage() {
           <div className="flex items-center gap-1 rounded-xl border border-line bg-surface p-1">
             <button
               onClick={() => setMode("targeted")}
+              aria-pressed={mode === "targeted"}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                "flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2 py-2.5 text-sm font-semibold transition-all",
                 mode === "targeted"
                   ? "bg-primary text-white shadow-sm"
                   : "text-foreground-muted hover:text-foreground"
               )}
             >
-              <Target className="h-3.5 w-3.5" />
-              Optimize for a Job
+              <Target className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">For a job</span>
+              <span className="hidden sm:inline">Optimize for a Job</span>
             </button>
             <button
               onClick={() => setMode("general")}
+              aria-pressed={mode === "general"}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all",
+                "flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-2 py-2.5 text-sm font-semibold transition-all",
                 mode === "general"
                   ? "bg-primary text-white shadow-sm"
                   : "text-foreground-muted hover:text-foreground"
               )}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              General Improvement
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">General polish</span>
+              <span className="hidden sm:inline">General Improvement</span>
             </button>
           </div>
 
@@ -193,7 +206,7 @@ export default function OptimizePage() {
                     onChange={(e) => setJobDescription(e.target.value)}
                     placeholder="Paste the full job description here — include requirements, responsibilities, and preferred qualifications for best results..."
                     rows={10}
-                    className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
+                    className="w-full resize-none rounded-xl border border-line-strong bg-background px-4 py-3 text-base sm:text-sm text-foreground placeholder-foreground-dim focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
                   />
                   <div className="mt-1.5 flex justify-between text-xs text-foreground-muted">
                     <span>Minimum 50 characters</span>
@@ -208,7 +221,7 @@ export default function OptimizePage() {
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark hover:shadow-[rgba(108,99,255,0.45)] active:scale-[0.98] active:bg-[#5a52e0] active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(108,99,255,0.3)] hover:bg-primary-dark hover:shadow-[rgba(108,99,255,0.45)] active:scale-[0.98] active:bg-primary-dark active:shadow-none transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
           >
             {step === "loading" ? (
               <>
@@ -228,16 +241,16 @@ export default function OptimizePage() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-2.5 rounded-xl border border-[#ef4444]/30 bg-[#ef4444]/10 p-4"
+              className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger/10 p-4"
             >
-              <AlertCircle className="h-4 w-4 text-[#ef4444] mt-0.5 shrink-0" />
-              <p className="text-sm text-[#ef4444]">{errorMsg}</p>
+              <AlertCircle className="h-4 w-4 text-danger mt-0.5 shrink-0" />
+              <p className="text-sm text-danger">{errorMsg}</p>
             </motion.div>
           )}
         </div>
 
         {/* Right — results */}
-        <div>
+        <div ref={resultsRef} tabIndex={-1} aria-live="polite" className="scroll-mt-20 focus:outline-none">
           <AnimatePresence mode="wait">
             {step === "idle" && (
               <motion.div
@@ -245,10 +258,10 @@ export default function OptimizePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center h-full min-h-100 rounded-2xl border border-dashed border-line text-center p-8"
+                className="hidden lg:flex flex-col items-center justify-center h-full min-h-100 rounded-2xl border border-dashed border-line text-center p-8"
               >
-                <div className="h-16 w-16 rounded-2xl bg-[#6c63ff]/10 border border-[#6c63ff]/20 flex items-center justify-center mb-4">
-                  <Zap className="h-7 w-7 text-[#6c63ff]" />
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+                  <Zap className="h-7 w-7 text-primary-ink" />
                 </div>
                 <p className="text-sm font-medium text-foreground-muted">
                   Your score and optimized resume will appear here
@@ -269,7 +282,7 @@ export default function OptimizePage() {
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center h-full min-h-100 rounded-2xl border border-line bg-surface text-center p-8"
               >
-                <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+                <Loader2 className="h-10 w-10 text-primary-ink animate-spin mb-4" />
                 <p className="text-sm font-medium">Optimizing your resume…</p>
                 <p className="text-xs text-foreground-muted mt-1">
                   {mode === "targeted"
@@ -312,7 +325,7 @@ export default function OptimizePage() {
                   isLocked={false}
                 />
                 {result.assessment && (
-                  <ShortlistAssessment assessment={result.assessment} />
+                  <ShortlistAssessment assessment={result.assessment} mode={result.mode} />
                 )}
                 {result.mode === "targeted" && result.assessment?.skills_heatmap?.length ? (
                   <GapAnalysis
